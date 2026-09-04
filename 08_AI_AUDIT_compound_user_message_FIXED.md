@@ -1,0 +1,15 @@
+=Audit Report / Incident Document to Extract
+
+Source URL: https://www.openzeppelin.com/news/compound-audit
+Source Firm: OpenZeppelin
+Source Document Title: Compound Audit
+Date Originally Published (for date_flagged): 2019-08-23 for every finding in this document. Unlike the Aave/StErMi report, there is no later "UPDATE" section with a separate review date -- use 2019-08-23 uniformly.
+
+Disposition source: Unlike the Aave/StErMi report, this document has NO per-finding Status/Disposition column and no inline resolution statement per finding -- only a single prose Conclusion at the end of the document ("No critical and two high severity issues were found. Some changes were proposed to follow best practices and reduce potential attack surface."). There is no primary-source per-finding Fixed/Acknowledged label to map. Use UNKNOWN for every finding's disposition per the no-inference-from-severity rule -- do not infer FIXED or ACKNOWLEDGED_NO_FIX from the Conclusion's general tone, and do not infer it from severity.
+
+Severity source: Each finding sits under a "## <Severity> Severity" heading (Critical/High/Medium/Low) stated in this document's own severity classification -- use that verbatim label in provenance.original_severity_label, then map it onto the fixed severity enum. One additional heading, "## Notes", is NOT a formal severity level but DOES contain real findings (e.g. Unvetted Token Warning, Transparent Proxy Pattern, collateralFactorMantissa Needs to be Set) -- for findings under this heading, use "Informational" as the mapped severity (the schema's severity enum is fixed to Critical/High/Medium/Low/Informational only -- "Notes" is not a valid value and will fail schema validation if used) and note in provenance.original_severity_label that the source heading was "Notes" rather than a numbered severity tier.
+
+Scope note: This document has already been pre-filtered upstream (by a dedicated filter node) from its original 36 findings down to the subset relevant to this pipeline's fixed Compound risk taxonomy (Administrator Governance Concentration, Comptroller Policy Centralisation, Interest Rate Model Economic Dependency, Underlying Token Dependency, Composability/Trust Boundary Expansion, No Upgradeability, plus the legacy fail()/error-code convention). The filtered document text includes a NOTE block stating how many findings were kept vs. excluded and why -- treat that as informational context, not something to re-derive. Emit one object per distinct finding present in the filtered text, per the system prompt's rules -- do not sample, cap, or merge findings together. If any purely documentation/gas-optimization/code-style finding slipped through the upstream filter, skip it here too -- only extract findings that describe an actual architectural/behavioral claim about the protocol's code.
+
+Document Text:
+{{ $node["08a_filter_compound_audit"].json.document_text }}

@@ -1,0 +1,64 @@
+SMART CONTRACT RISK ASSESSMENT PIPELINE — NOTES FOR IMAGE GENERATION
+(v3 — corrected late-stage sequence per confirmed execution logs)
+
+Draw a horizontal flowchart, left to right, with 12 boxes connected by arrows. Each box has a small coloured tag above it showing its category, and a title + one-line description inside the box. If 12 boxes is too dense for one clean image, it is fine to wrap onto two rows, or to lightly merge adjacent same-colour boxes (e.g. combine the four AI reasoning agents into one wider "AI Reasoning Agents" band) — but keep all 12 stages listed below identifiable somewhere in the image.
+
+1. EVIDENCE COLLECTION
+   Tag: INPUT (blue)
+   Contract address is submitted; ABI and source code are fetched and normalised.
+
+2. STATIC ANALYSIS (Slither)
+   Tag: NO AI INPUT (grey, solid border)
+   A deterministic static-analysis tool scans the normalised source code and produces structured findings, used as context for the next stage.
+
+3. AI ARCHITECTURE REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Reads the ABI, source code and Slither output to map the contract's structure, permissions and external dependencies.
+
+4. AI RISK REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Using that architectural context, generates candidate risk findings — not limited to a fixed checklist.
+
+5. AI AUDIT REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Reviews a fetched, filtered audit document for the protocol and reasons about what it implies for the candidate risks.
+
+6. AI HISTORICAL EXPLOIT REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Compares candidate risks against a deterministically-retrieved set of historical exploit records and reasons about precedent.
+
+7. FOUNDRY & TEMPORAL VALIDATION
+   Tag: NO AI INPUT (grey, solid border)
+   Foundry-based execution tests whether proposed risks actually work against live/forked contract state; time-based (temporal) evidence is gathered in parallel.
+
+8. DETERMINISTIC EVIDENCE FUSION
+   Tag: NO AI INPUT (grey, solid border)
+   All deterministic evidence gathered so far — static analysis, Foundry results, audit findings, temporal data — is aggregated and normalised into a single deterministic evidence set.
+
+9. DETERMINISTIC VALIDATION (EVIDENCE ANCHOR)
+   Tag: NO AI INPUT (grey, solid border)
+   The aggregated deterministic evidence is anchored and validated against the live/forked contract state, producing the ground-truth evidence base the AI claims will be tested against.
+
+10. DST EVIDENCE FUSION (Dempster-Shafer)
+    Tag: EVIDENCE FUSION (purple)
+    The AI-generated candidate claims and the anchored deterministic evidence are combined using Dempster-Shafer theory, preserving agreement, conflict, or uncertainty rather than averaging them away.
+
+11. FINAL AI AGENT
+    Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+    Reviews the fused evidence in full and produces a synthesised, probabilistic assessment score.
+
+12. DETERMINISTIC GROUND-TRUTH SCORE
+    Tag: OUTPUT (blue)
+    The final deterministic score is reported alongside the AI's probabilistic score, so the two are presented together rather than collapsed into one number.
+
+VISUAL STYLE NOTES:
+- Clean, minimal, academic diagram style (not decorative/illustrative) — like a systems architecture diagram in a dissertation.
+- AI-driven stages: green fill, dashed border (stages 3, 4, 5, 6, 11).
+- Deterministic/non-AI stages: grey fill, solid border (stages 2, 7, 8, 9).
+- Input/output stages: light blue fill, solid border (stages 1, 12).
+- Fusion stage: light purple fill, solid border (stage 10).
+- Simple right-pointing arrows between boxes, no decorative elements.
+- White background, black text, sans-serif font.
+- Caption underneath: "Figure: Smart Contract Risk Assessment Pipeline"
+
+NOTE: This sequence is confirmed against the actual pipeline execution behaviour (the exported n8n JSON had some node code left as unfilled placeholders, but the real logic runs in production and follows this order). Stages 8–10 in particular were refined based on direct confirmation: Deterministic Evidence Fusion (aggregation) and Deterministic Validation (anchoring) both happen before DST Evidence Fusion (the actual Dempster-Shafer combination), and the pipeline ends with two parallel final outputs — an AI probabilistic score and a deterministic ground-truth score — rather than a single collapsed number.

@@ -1,0 +1,39 @@
+SMART CONTRACT RISK ASSESSMENT PIPELINE — NOTES FOR IMAGE GENERATION
+
+Draw a horizontal flowchart, left to right, with 6 boxes connected by arrows. Each box has a small coloured tag above it showing its category, and a title + one-line description inside the box.
+
+1. EVIDENCE COLLECTION
+   Tag: INPUT (blue)
+   Contract ABI and available source code are ingested, along with on-chain context.
+
+2. AI REASONING (LLM)
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   The model reads the ABI/source-code context and generates candidate risks — architectural weaknesses and possible exploit paths not limited to a fixed checklist.
+
+3. DETERMINISTIC EVIDENCE GATHERING
+   Tag: NO AI INPUT (grey, solid border)
+   Each candidate risk is tested independently: on-chain queries confirm the contract's actual live state, Foundry-based execution tests whether a proposed exploit path actually works, and historical exploit comparison checks whether the risk resembles a documented real-world incident.
+
+4. EVIDENCE FUSION (Dempster-Shafer)
+   Tag: EVIDENCE FUSION (purple)
+   The AI's candidate claim and the deterministic test result are combined using Dempster-Shafer theory, which can represent agreement, conflict, or genuine uncertainty — not just a single averaged score.
+
+5. CONFIDENCE / CALIBRATION
+   Tag: CONFIDENCE FUSION (purple)
+   A final confidence figure is calculated for each finding, along with any residual conflict between the AI and deterministic sources, so disagreement is reported rather than hidden.
+
+6. FINAL ASSESSMENT
+   Tag: OUTPUT (blue)
+   Findings are reported with their confidence level and evidence trail, ready for review.
+
+VISUAL STYLE NOTES:
+- Clean, minimal, academic diagram style (not decorative/illustrative) — like a systems architecture diagram in a dissertation.
+- AI-driven stages: green fill, dashed border.
+- Deterministic/non-AI stages: grey fill, solid border.
+- Input/output stages: light blue fill, solid border.
+- Fusion/calibration stages: light purple fill, solid border.
+- Simple right-pointing arrows between boxes, no decorative elements.
+- White background, black text, sans-serif font.
+- Caption underneath: "Figure: Smart Contract Risk Assessment Pipeline"
+
+NOTE: This reflects the current, simplified architecture used in the dissertation text (one AI reasoning stage generating candidates, all verification treated as deterministic evidence, including historical exploit comparison). It differs from an earlier draft diagram built mid-session that showed four separate AI agents (Architecture/Risk/Historical/Final) — use this version, not that one, since it matches what's now written in the Literature Review and Methods sections.

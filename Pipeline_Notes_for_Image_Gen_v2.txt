@@ -1,0 +1,52 @@
+SMART CONTRACT RISK ASSESSMENT PIPELINE — NOTES FOR IMAGE GENERATION
+(Based on the actual Compound n8n workflow — "Compound (7).json", confirmed final version)
+
+Draw a horizontal flowchart, left to right, with 9 boxes connected by arrows. Each box has a small coloured tag above it showing its category, and a title + one-line description inside the box.
+
+1. EVIDENCE COLLECTION
+   Tag: INPUT (blue)
+   Contract address is submitted; ABI and source code are fetched and normalised.
+
+2. STATIC ANALYSIS (Slither)
+   Tag: NO AI INPUT (grey, solid border)
+   A deterministic static-analysis tool (Slither) scans the normalised source code and produces structured findings, used as context for the next stage.
+
+3. AI ARCHITECTURE REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Reads the ABI, source code and Slither output to map the contract's structure, permissions and external dependencies.
+
+4. AI RISK REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Using that architectural context, generates candidate risk findings — not limited to a fixed checklist.
+
+5. AI AUDIT REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Reviews a fetched, filtered audit document for the protocol and reasons about what it implies for the candidate risks.
+
+6. AI HISTORICAL EXPLOIT REASONER
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   Compares candidate risks against a deterministically-retrieved set of historical exploit records and reasons about precedent.
+
+7. DETERMINISTIC VALIDATION
+   Tag: NO AI INPUT (grey, solid border)
+   Foundry-based execution tests whether proposed risks actually work against live/forked contract state; temporal (time-based) evidence is gathered in parallel.
+
+8. EVIDENCE FUSION (Dempster-Shafer)
+   Tag: EVIDENCE FUSION (purple)
+   Deterministic code combines the AI-generated claims with the test results using Dempster-Shafer theory, preserving agreement, conflict, or uncertainty rather than averaging them away.
+
+9. AI AUDIT INTELLIGENCE (Final Synthesis)
+   Tag: ARTIFICIAL INTELLIGENCE (green, dashed border)
+   A final AI stage reviews the fused evidence alongside a selected, extracted audit document and produces the synthesised assessment.
+
+VISUAL STYLE NOTES:
+- Clean, minimal, academic diagram style (not decorative/illustrative) — like a systems architecture diagram in a dissertation.
+- AI-driven stages: green fill, dashed border (5 of the 9 boxes: stages 3, 4, 5, 6, 9).
+- Deterministic/non-AI stages: grey fill, solid border (stages 2, 7).
+- Input stage: light blue fill, solid border (stage 1).
+- Fusion stage: light purple fill, solid border (stage 8).
+- Simple right-pointing arrows between boxes, no decorative elements.
+- White background, black text, sans-serif font.
+- Caption underneath: "Figure: Smart Contract Risk Assessment Pipeline"
+
+IMPORTANT: This version is traced directly from the actual n8n workflow node graph and connections, confirmed as the final Compound pipeline. It supersedes both earlier versions used this session (the 4-agent diagram built mid-session, and the single-AI-stage simplification used in the most recent Literature Review / Methods drafts). If you want the dissertation text to match this real architecture, that will need another pass — the current chapter text describes AI as a single "discovery stage" and treats historical comparison as deterministic, both of which this workflow contradicts.

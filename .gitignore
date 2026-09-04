@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.docx
+~$*
+
+# Third-party audit PDFs -- redistribution not cleared, keep local only
+AuditRepository/
+AuditRepository_Updated*.zip
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db

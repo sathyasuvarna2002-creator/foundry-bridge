@@ -1,0 +1,105 @@
+{
+  "type": "object",
+  "properties": {
+    "historical_security_assessment": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "canonical_finding_id": {
+            "type": "string",
+            "description": "REQUIRED. Choose exactly one canonical finding ID whose DEFINITION below most closely matches the actual content of this risk. Compare against the definitions themselves, not the order they are listed in -- do NOT assign IDs based on list position or the order you generated your risks in.\n\nF01 = Upgradeable Proxy Control Risk\nF02 = Registry Centralisation Risk\nF03 = ACL Manager Role Concentration\nF04 = Pool Configurator Centralised Configuration Authority\nF05 = Umbrella Exclusive Deficit Elimination Authority\nF06 = Asset Price Oracle Dependency\nF07 = aToken and Debt Token External Implementation Custody Dependency\nF08 = Interest Rate Strategy Externalization\nF09 = Composability Risk: External Flashloan Receivers & Optional Debt Opening\nF10 = Trust Boundary Expansion via Position Manager Delegation\nF11 = Reserve Registry Operational Dependency\nF12 = Accounting-State Manipulation via Unguarded Mutation Path",
+            "enum": [
+              "F01",
+              "F02",
+              "F03",
+              "F04",
+              "F05",
+              "F06",
+              "F07",
+              "F08",
+              "F09",
+              "F10",
+              "F11",
+              "F12"
+            ]
+          },
+          "architectural_risk": {
+            "type": "string"
+          },
+          "precedent_found": {
+            "type": "boolean"
+          },
+          "exploit_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "protocol": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "architectural_similarity": {
+            "type": "string"
+          },
+          "architectural_differences": {
+            "type": "string"
+          },
+          "historical_evidence": {
+            "type": "string"
+          },
+          "evidence_strength": {
+            "type": "string",
+            "enum": [
+              "Strong Evidence",
+              "Moderate Evidence",
+              "Limited Evidence",
+              "No Evidence"
+            ]
+          },
+          "reasoning": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "canonical_finding_id",
+          "architectural_risk",
+          "precedent_found",
+          "exploit_name",
+          "protocol",
+          "year",
+          "category",
+          "architectural_similarity",
+          "architectural_differences",
+          "historical_evidence",
+          "evidence_strength",
+          "reasoning",
+          "confidence"
+        ]
+      }
+    }
+  },
+  "required": [
+    "historical_security_assessment"
+  ]
+}

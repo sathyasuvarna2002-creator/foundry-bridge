@@ -1,0 +1,178 @@
+{
+  "architectural_risks": [
+    {
+      "risk_name": "Upgradeable Proxy Control Risk",
+      "finding_id": "UPGRADEABILITY-01",
+      "risk_category": "Upgradeability",
+      "claim_id": "COMPOUND-ADMIN-IMPLEMENTATION-NOT-APPLICABLE",
+      "status": "SUPERSEDED -- does not apply to the deployed target",
+      "validation_target": {
+        "protocol": "Compound",
+        "primary_component": "CErc20",
+        "mechanism_tokens": ["admin"],
+        "dependency_chain": []
+      },
+      "severity": "Informational",
+      "description": "SUPERSEDED 2026-08-19. This entry originally described a CErc20Delegator/CErc20Delegate delegatecall-proxy pattern (admin-gated _setImplementation/_becomeImplementation) as if it applied to the live target market. It does not. The deployed contract at cUSDC's address (0x39AA39c021dfbAe8faC545936693aC917d5E7563) is a plain, directly-deployed CErc20 -- confirmed via its actual Etherscan-verified ABI, which contains no _setImplementation/_becomeImplementation/_resignImplementation function of any kind, only a direct constructor (underlying_, comptroller_, interestRateModel_, ...) and a fixed admin function set (_setComptroller, _setInterestRateModel, _setReserveFactor, _reduceReserves, _setPendingAdmin/_acceptAdmin). The delegator/delegate split exists in later Compound V2 markets (e.g. cUNI, cCOMP, added post-2020) but not this one. Node06's real architecture-recon output ('pattern: Not Identified') and a live on-chain cast call to implementation() (reverts -- function does not exist) both independently confirm this. The corresponding Foundry test (CompoundUpgradeableProxyControl.t.sol) has already been rewritten as a negative-control test asserting this absence, rather than testing an access boundary that doesn't exist on this contract.",
+      "architectural_rationale": "Retained for audit-trail purposes only. The original rationale (delegatecall proxy => whoever controls _setImplementation controls all market logic) is architecturally correct for CErc20Delegator-based markets in general, but was mistakenly attributed to this specific deployment without checking the actual verified source/ABI for the address under test.",
+      "affected_components": [],
+      "supporting_observations": [
+        "Real ABI for 0x39AA39c021dfbAe8faC545936693aC917d5E7563 contains zero implementation-swap functions.",
+        "cast call 0x39AA39c021dfbaE8faC545936693aC917d5E7563 \"implementation()(address)\" reverts on mainnet.",
+        "Node06's live output for this target reports no proxy/delegatecall pattern."
+      ],
+      "evidence": [
+        "Etherscan getabi response for the target address: no _setImplementation/_becomeImplementation/_resignImplementation entries.",
+        "Constructor ABI entry: (underlying_, comptroller_, interestRateModel_, initialExchangeRateMantissa_, name_, symbol_, decimals_) -- a direct, single-stage deployment, not a delegator handoff."
+      ],
+      "governance_model": "Unknown",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "Negative control: confirm implementation() reverts (no delegator interface present). See CompoundUpgradeableProxyControl.t.sol.",
+      "related_risks": ["ACCESS-CONTROL-01"],
+      "mitigation_considerations": [
+        "None applicable -- no upgrade mechanism exists on this specific deployment to mitigate.",
+        "If a future target market IS delegator-based (e.g. cUNI, cCOMP), re-instantiate this finding against that market's real ABI before reusing this taxonomy entry."
+      ],
+      "confidence": 0.97,
+      "confidence_rationale": "Evidence completeness is FULL and inference distance is DIRECT -- the absence is confirmed three independent ways (ABI, live on-chain call, Node06 output), not inferred from a single source.",
+      "known_limitation": "ACCESS-CONTROL-01 below (same document) also cites a Solidity custom-error revert style ('SetReserveFactorAdminCheck') for _setReserveFactor's admin check. That syntax requires Solidity >=0.8.4; the actual deployed source for this target is pragma ^0.5.8 (require-string reverts), so that evidence line is similarly unverified against the real deployment and should be re-checked before being treated as ground truth."
+    },
+    {
+      "risk_name": "Single-Admin Economic Parameter Control",
+      "finding_id": "ACCESS-CONTROL-01",
+      "risk_category": "Access Control",
+      "claim_id": "COMPOUND-ADMIN-_SETRESERVEFACTOR",
+      "validation_target": {
+        "protocol": "Compound",
+        "primary_component": "CToken",
+        "mechanism_tokens": ["admin", "_setReserveFactor"],
+        "dependency_chain": []
+      },
+      "severity": "Medium",
+      "description": "A market's reserve factor -- the share of borrow interest diverted to protocol reserves rather than paid to suppliers -- can only be changed by the same single admin address that controls the implementation pointer, concentrating both technical and economic control in one entity.",
+      "architectural_rationale": "_setReserveFactor is gated by the same admin address referenced elsewhere in the market's privileged-entity surface. Unlike the implementation setter, which reverts with a plain require string, the currently observed source reverts via a dedicated custom error (SetReserveFactorAdminCheck), suggesting this check has been maintained or refactored independently of the delegator's own admin check over the contract's history -- worth noting as a structural detail even though both checks enforce the same admin identity.",
+      "affected_components": ["CToken", "CErc20Delegate"],
+      "supporting_observations": [
+        "The admin identity referenced here is the same admin state variable used to gate the implementation setter, meaning this is not a separately-governed parameter"
+      ],
+      "evidence": [
+        "function _setReserveFactorFresh(uint newReserveFactorMantissa) internal returns (uint) { if (msg.sender != admin) { return fail(Error.UNAUTHORIZED, FailureInfo.SET_RESERVE_FACTOR_ADMIN_CHECK); } ... }",
+        "Confirmed via direct Etherscan-verified source for 0x39AA39c021dfbAe8faC545936693aC917d5E7563 (pragma ^0.5.8): this is Compound's legacy TokenErrorReporter convention -- fail() emits a Failure(uint,uint,uint) event and RETURNS Error.UNAUTHORIZED (1); it does NOT revert and does NOT use a Solidity custom error. No 'error SetReserveFactorAdminCheck()' declaration exists anywhere in the deployed source."
+      ],
+      "governance_model": "Unknown",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "Directly testable: attempt _setReserveFactor from an unauthorized address and assert the return value equals Error.UNAUTHORIZED (1) with reserveFactorMantissa unchanged -- NOT vm.expectRevert(), since this call completes normally and returns an error code rather than reverting. See CompoundReserveFactorAccessControl.t.sol, which already implements this correctly (its own docstring documents an earlier revert-based version of the test being wrong for the same reason).",
+      "related_risks": ["UPGRADEABILITY-01"],
+      "mitigation_considerations": [
+        "Route economic parameter changes through a separate, dedicated governance process from technical upgrade authority.",
+        "Bound reserve factor changes with a maximum per-transaction delta or a timelock."
+      ],
+      "confidence": 0.94,
+      "confidence_rationale": "Evidence completeness is FULL and inference distance is DIRECT for the admin check itself, now confirmed against the actual Etherscan-verified deployed source rather than a generic/newer Compound source revision. Corroboration is MULTIPLE: independently confirmed via direct source inspection and via a passing forked Foundry test. Held below 0.97 because the specific admin address's own governance nature (EOA vs multisig vs DAO) remains unestablished."
+    },
+    {
+      "risk_name": "Exchange Rate Manipulation via Unmediated Token Transfer",
+      "finding_id": "ASSET-CUSTODY-01",
+      "risk_category": "Asset Custody",
+      "claim_id": "COMPOUND-BALANCEOF-EXCHANGERATESTOREDINTERNAL-GETCASHPRIOR",
+      "validation_target": {
+        "protocol": "Compound",
+        "primary_component": "CErc20",
+        "mechanism_tokens": ["balanceOf", "exchangeRateStoredInternal", "getCashPrior"],
+        "dependency_chain": ["exchangeRateStoredInternal", "getCashPrior", "balanceOf"]
+      },
+      "severity": "High",
+      "description": "For standard (non-DAI) markets, the exchange rate used to convert between the receipt token and the underlying asset is derived in part from the market contract's raw ERC-20 balance of the underlying token, which can be moved by directly transferring tokens to the contract -- a path entirely outside the market's own mint() entry point and its associated Comptroller policy checks.",
+      "architectural_rationale": "getCashPrior() -- one of the direct inputs to exchangeRateStoredInternal() -- is implemented as a raw EIP20Interface(underlying).balanceOf(address(this)) read for standard markets. Because this reads the contract's actual token balance rather than an internally tracked accounting variable, any direct ERC-20 transfer into the market contract increases this figure identically to a transfer that arrived via mintFresh, but without passing through mintAllowed's Comptroller-level policy check or being reflected in totalSupply. This creates a path to move the exchange rate that bypasses the architecture's normal supply-side gating entirely.",
+      "affected_components": ["CErc20", "CToken"],
+      "supporting_observations": [
+        "mintFresh/mintBehalfFresh increment totalSupply via doTransferIn but do not separately reconcile or gate the contract's raw token balance against expected inflows",
+        "This is architecturally identical to a documented real-world exploit class (donation/exchange-rate-manipulation attacks) previously confirmed against Venus Protocol, which shares this same getCashPrior/balanceOf lineage"
+      ],
+      "evidence": [
+        "function getCashPrior() internal view returns (uint) { EIP20Interface token = EIP20Interface(underlying); return token.balanceOf(address(this)); } -- confirmed present verbatim (minus 'virtual override', which are Solidity >=0.6 keywords not used anywhere in this contract's actual pragma ^0.5.8 deployed source; that phrasing in earlier evidence text was copied from the compound-finance/compound-protocol GitHub repo's current HEAD rather than the Etherscan-verified deployed bytecode for this address) in the real source for 0x39AA39c021dfbAe8faC545936693aC917d5E7563.",
+        "exchangeRateStoredInternal derives its result from getCashPrior() alongside totalBorrows, totalReserves, and totalSupply -- confirmed via the same source.",
+        "Independently confirmed empirically (not just via source reading): CompoundDonationAttack.t.sol forks live mainnet, transfers USDC directly to cUSDC with no mint() call, and asserts exchangeRateStored() increases -- a runtime result, not an inference."
+      ],
+      "governance_model": "Unknown",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "Directly testable: read exchangeRateStored() before and after a direct ERC-20 transfer to the market contract (not via mint), on a market whose underlying token uses plain balanceOf-based cash accounting (not cDAI, whose DSR-routed getCashPrior override does not follow this pattern).",
+      "related_risks": [],
+      "mitigation_considerations": [
+        "Track supplied deposits via an internal accounting variable rather than reading raw token balance directly.",
+        "Reconcile unexpected balance increases (donations) into reserves rather than the exchange rate, or otherwise neutralize their effect on share pricing."
+      ],
+      "confidence": 0.86,
+      "confidence_rationale": "Evidence completeness is FULL for the mechanism itself (the balanceOf-based getCashPrior implementation is explicit in source), and inference distance is ONE_STEP -- connecting 'balance can move without going through mint' to 'exchange rate can be manipulated' requires one reasoning step beyond the bare code observation. Corroboration is MULTIPLE given the same architectural fact is independently confirmed by a real, previously-validated finding against Venus, which forked this exact mechanism. Not scored higher because this specific instance targets a representative market (cUSDC) rather than every market -- cDAI is architecturally different and explicitly excluded."
+    },
+    {
+      "risk_name": "Unilateral Protocol-Wide Pause Authority",
+      "finding_id": "OPERATIONAL-RESILIENCE-01",
+      "risk_category": "Operational Resilience",
+      "claim_id": "COMPOUND-BORROWGUARDIANPAUSED-MINTGUARDIANPAUSED",
+      "validation_target": {
+        "protocol": "Compound",
+        "primary_component": "Comptroller",
+        "mechanism_tokens": ["mintGuardianPaused", "borrowGuardianPaused"],
+        "dependency_chain": []
+      },
+      "severity": "Medium",
+      "description": "A protocol-wide authority, separate from any individual market's admin, can independently and permanently disable new supply or borrow activity across every market via two boolean flags gated in the Comptroller -- an authority that real governance history shows has ALREADY been exercised at full protocol scope (confirmed live on mainnet, not merely a theoretical capability or a still-pending proposal).",
+      "architectural_rationale": "mintAllowed and borrowAllowed both check a per-market pause flag (mintGuardianPaused, borrowGuardianPaused) before allowing the underlying operation to proceed, and both flags are set through Comptroller-level admin functions rather than any individual market's own admin. This represents a distinct, protocol-wide layer of privileged control sitting above the per-market admin layer covered in UPGRADEABILITY-01 and ACCESS-CONTROL-01: even if a market's own admin key is well-governed, protocol-wide operability still depends on trust in this separate authority. Real governance history corroborates this is not a purely hypothetical capability -- a DAO-approved proposal to pause supply and borrow across every V2 market, and simultaneously raise every market's reserve factor to 100%, was scheduled for on-chain execution, demonstrating the authority operates at the scope the architecture implies.",
+      "affected_components": ["Comptroller"],
+      "supporting_observations": [
+        "The pause flags are keyed per-market but set through a single Comptroller-level entry point, meaning one governance action can freeze many markets simultaneously",
+        "Repayments, withdrawals, transfers, and liquidations are architecturally distinct from mint/borrow and are not gated by these same flags"
+      ],
+      "evidence": [
+        "require(!mintGuardianPaused[cToken], \"mint is paused\")",
+        "require(!borrowGuardianPaused[cToken], \"borrow is paused\")",
+        "function _setMintPaused(CToken cToken, bool state) public returns (bool) { ... mintGuardianPaused[address(cToken)] = state; }",
+        "Compound Community Forum, '[Gauntlet] Compound V2 Deprecation Proposal': DAO-approved plan to pause supply/borrow and set reserve factors to 100% across all V2 markets, on-chain execution scheduled 20 Oct 2025 -- and, as of this pass, independently reconfirmed as EXECUTED via live cast call: mintGuardianPaused(cUSDC) == true, reserveFactorMantissa() == 1e18 (100%), both against the real Comptroller (0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B) and cUSDC on current mainnet."
+      ],
+      "governance_model": "DAO",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "Directly testable by live state read: query mintGuardianPaused(cToken) on a real market and confirm it is currently true, and attempt mint() from an arbitrary address (not an authorization test, since this blocks every caller) and confirm the specific 'mint is paused' revert.",
+      "related_risks": [],
+      "mitigation_considerations": [
+        "Publish and enforce a defined process (e.g. minimum notice period) before exercising protocol-wide pause authority.",
+        "Distinguish, in user-facing documentation, between a temporary risk-response pause and a permanent deprecation action, since both use the same underlying mechanism."
+      ],
+      "confidence": 0.96,
+      "confidence_rationale": "Evidence completeness is FULL for the mechanism (the pause-gated require checks are explicit in source) and now FULL for the real-world exercise claim as well -- both the pause flag and the reserve-factor change have been independently reconfirmed via live cast call against the real Comptroller and cUSDC, and via a passing forked Foundry test (CompoundPauseGuardianDeprecation.t.sol), not just the governance forum record alone. Inference distance is DIRECT throughout."
+    },
+    {
+      "risk_name": "Interest Accrual Dependency on External Rate Model",
+      "finding_id": "ECONOMIC-DEPENDENCY-01",
+      "risk_category": "Economic Dependency",
+      "claim_id": "COMPOUND-ACCRUEINTEREST-GETBORROWRATE-INTERESTRATEMODEL",
+      "validation_target": {
+        "protocol": "Compound",
+        "primary_component": "CToken",
+        "mechanism_tokens": ["accrueInterest", "interestRateModel", "getBorrowRate"],
+        "dependency_chain": ["accrueInterest", "interestRateModel", "getBorrowRate"]
+      },
+      "severity": "Medium",
+      "description": "Borrower interest, and therefore the market's totalBorrows and borrow index, is not computed internally but is deterministically driven by an external, per-market-swappable InterestRateModel contract's getBorrowRate output, applied every time accrueInterest is called.",
+      "architectural_rationale": "accrueInterest reads the market's current cash, borrows, and reserves, passes them to the external interestRateModel's getBorrowRate function, and compounds totalBorrows and borrowIndex by the returned per-block rate multiplied by the elapsed block delta. Because interestRateModel is a swappable external dependency rather than logic internal to the market contract, the market's core economic behavior -- how quickly debt grows -- is only as trustworthy as whichever contract currently occupies that address, and accrueInterest itself is callable by anyone, meaning this dependency is exercised continuously and permissionlessly rather than only under privileged control.",
+      "affected_components": ["CToken", "InterestRateModel"],
+      "supporting_observations": [
+        "accrueInterest is not admin-gated -- any address can trigger it, meaning the dependency is exercised on an ongoing, permissionless basis rather than only during privileged operations",
+        "This mirrors a previously-confirmed finding on Venus Protocol, which shares the same accrueInterest/interestRateModel/getBorrowRate architecture"
+      ],
+      "evidence": [
+        "CToken.sol accrueInterest(): borrowRateMantissa = interestRateModel.getBorrowRate(cashPrior, borrowsPrior, reservesPrior); simpleInterestFactor = borrowRateMantissa * blockDelta; totalBorrowsNew = simpleInterestFactor-scaled increase applied to totalBorrowsPrior"
+      ],
+      "governance_model": "Unknown",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "Directly testable: on a market with non-zero totalBorrows and a non-zero live borrow rate, advance blocks and call accrueInterest(), then confirm totalBorrows and borrowIndex both increased -- the same pattern already used to validate this finding on Venus.",
+      "related_risks": [],
+      "mitigation_considerations": [
+        "Require a timelock or multi-party approval before swapping a market's interestRateModel.",
+        "Bound acceptable rate model outputs to prevent an extreme or malicious rate from being applied unnoticed."
+      ],
+      "confidence": 0.89,
+      "confidence_rationale": "Evidence completeness is FULL and inference distance is DIRECT -- the accrual formula and its dependency on the external rate model are explicit in source. Corroboration is MULTIPLE: this is independently supported both by the source evidence here and by an already-validated equivalent finding on Venus, which forked this exact mechanism. Held below 0.95 because whether a specific target market currently has non-zero totalBorrows -- a precondition for this dependency to be exercisable at all -- has not yet been confirmed via a live read."
+    }
+  ]
+}

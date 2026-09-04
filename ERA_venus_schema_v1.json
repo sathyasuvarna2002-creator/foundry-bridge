@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evidence Review Assessment (Venus)",
+  "description": "Final probabilistic assessment of each Venus canonical finding based on all available evidence sources, including comparison against Node 17 (Venus)'s mathematical DST fusion. Venus variant: open taxonomy (no fixed F01-F11), and unmapped Node 08 audit findings are reported separately as unscored context rather than silently dropped or force-attached to a finding.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["review_assessments", "unmapped_audit_context"],
+  "properties": {
+    "review_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_findings", "supported", "partially_supported", "outside_scope", "contradicted", "average_review_confidence", "unmapped_audit_context_count", "overall_assessment"],
+      "properties": {
+        "total_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Must equal the number of items in review_assessments -- i.e. the number of canonical (non-UNMAPPED-*) finding_ids Node 17 (Venus) actually output this run. Open taxonomy: no fixed count, unlike Aave's fixed 11."
+        },
+        "supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings strongly supported by evidence"
+        },
+        "partially_supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings with some supporting evidence"
+        },
+        "outside_scope": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings whose review_assessment is Outside Scope (rare for Venus -- Node 16 assigns a status to every finding it receives). Not the same axis as audit_relationship = Outside Scope, which is common and expected."
+        },
+        "contradicted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings whose review_assessment is Contradicted -- includes findings where deterministic validation reported CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION."
+        },
+        "average_review_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Average confidence across all review_assessments items."
+        },
+        "unmapped_audit_context_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of items in unmapped_audit_context. Must equal that array's length."
+        },
+        "overall_assessment": {
+          "type": "string",
+          "description": "Overall summary of evidence consistency across all reviewed findings. May note the existence of unmapped audit context in general terms (e.g. real audit coverage exists in an area not yet connected to a specific finding), but must not attribute it to any specific finding here."
+        }
+      }
+    },
+    "review_assessments": {
+      "type": "array",
+      "description": "Evidence-based assessment for each canonical finding Node 17 (Venus) output this run, EXCLUDING any finding_id beginning with 'UNMAPPED-'. Open taxonomy: no fixed count, no fixed enum of finding_ids. One item per finding_id, no duplicates, no omissions, no invented finding_ids.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "finding",
+          "finding_id",
+          "severity",
+          "review_assessment",
+          "review_confidence",
+          "audit_relationship",
+          "consensus_level",
+          "evidence_sources_present",
+          "deterministic_status",
+          "evidence_summary",
+          "review_reasoning",
+          "fusion_comparison_note"
+        ],
+        "properties": {
+          "finding": {
+            "type": "string",
+            "description": "Name of the architectural finding, copied from Node 17 (Venus)'s finding_name for this finding_id -- not re-worded."
+          },
+          "finding_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "REQUIRED. Copy this value exactly from Node 17 (Venus)'s output for the matching finding -- do NOT re-derive, guess, or assign by list position. Open taxonomy: Venus finding_ids (e.g. UPGRADEABILITY_01, ASSET_CUSTODY_01, ACCESS_CONTROL_01) are not a fixed enum and may vary run to run as the anchor-token spec evolves. Never an UNMAPPED-* value -- those go in unmapped_audit_context instead."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low", "Informational"],
+            "description": "Severity of the finding, copied from Node 13 (Venus)'s per-finding severity field (the fused/computed severity, already accounting for both sources when a finding is merged) -- not re-assessed here."
+          },
+          "review_assessment": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "Overall evidence-based assessment across ALL sources combined. Must be 'Contradicted' whenever Node 16's deterministic status is CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION -- never softened to Partially Supported in those cases."
+          },
+          "review_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence in this evidence-based assessment (0.0-1.0). Reflects evidence quality and agreement, not the finding's own severity. Your own independent judgment, reported alongside Node 17's fused output, not a substitute for it."
+          },
+          "audit_relationship": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "How Node 08's audit evidence specifically relates to THIS finding -- a separate axis from review_assessment. 'Outside Scope' when this finding's Node 13 `sources` does not include NODE_08_AUDIT (the common default, since Venus's ingested audit documents vary in coverage). 'Supported'/'Partially Supported' when sources DOES include NODE_08_AUDIT and source_findings.node08_audit corroborates. It is normal for review_assessment=Supported and audit_relationship=Outside Scope to appear together."
+          },
+          "consensus_level": {
+            "type": "string",
+            "enum": ["Strong", "Moderate", "Limited"],
+            "description": "Overall agreement between the available evidence sources."
+          },
+          "evidence_sources_present": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["architectural", "deterministic", "historical", "temporal", "audit"],
+            "properties": {
+              "architectural": { "type": "boolean", "description": "Architectural evidence present" },
+              "deterministic": { "type": "boolean", "description": "Deterministic validation present" },
+              "historical": { "type": "boolean", "description": "Historical precedent present" },
+              "temporal": { "type": "boolean", "enum": [false], "description": "Always false. No temporal analysis node exists in this pipeline (deleted early on, deferred as Phase-2 scope) -- kept as a field for schema parity with the Aave version and in case it's reintroduced later, but there is no input to set it true from." },
+              "audit": { "type": "boolean", "description": "TRUE only if this finding's Node 13 sources includes NODE_08_AUDIT (a real, matched audit finding) -- not true merely because unmapped audit context exists elsewhere in the run." }
+            }
+          },
+          "deterministic_status": {
+            "type": "string",
+            "enum": ["FULLY_SUPPORTED", "PARTIALLY_SUPPORTED", "MIXED_SUPPORT_AND_CONTRADICTION", "PARTIALLY_CONTRADICTED", "CONTRADICTED", "UNRESOLVED"],
+            "description": "The exact finding-level status copied from Node 16 (Venus)'s output for this finding_id."
+          },
+          "evidence_summary": {
+            "type": "string",
+            "description": "2-3 sentence summary of what evidence says about this finding. May cite mapped audit evidence (sources includes NODE_08_AUDIT) directly. Must NOT cite unmapped_audit_context entries as evidence for this finding."
+          },
+          "review_reasoning": {
+            "type": "string",
+            "description": "Your reasoning for this assessment."
+          },
+          "fusion_comparison_note": {
+            "type": "string",
+            "description": "Plain-language comparison of Node 07's raw confidence (or explicit note if fusion_applicable=false), Node 16's deterministic evidence, and Node 17's mathematically fused belief/plausibility/BetP for this finding. Do not recompute, adjust, or contradict Node 17's numbers. Read divergence.interval_position correctly: 'below_belief' is the structurally expected default whenever Node 16 shows no contradiction (per Node 17's own methodology) and must NOT be narrated as individually meaningful; only 'above_plausibility' (Node 07 claimed more than the evidence supports) is a genuine, worth-naming divergence. Also name explicitly, when present: (1) real Node 16 contradiction (K>0) that did not proportionally lower Node 17's fused belief -- a known Dempster-rule property where disagreement is absorbed into K rather than reducing belief; (2) a ceiling effect where the fused belief tracks deterministic support almost regardless of Node 07's confidence, reserving 'meaningfully corrected'-type language for genuinely large gaps, not small nudges repeated across many findings."
+          }
+        }
+      }
+    },
+    "unmapped_audit_context": {
+      "type": "array",
+      "description": "One entry per Node 13 (Venus) finding_id beginning with 'UNMAPPED-AUDIT-' this run -- real Node 08 audit findings that could not be anchor-token-matched to any canonical spec finding. Reported as context only: never scored, never treated as confirming, corroborating, or changing the status/confidence/fusion result of any finding in review_assessments. May be empty if no such findings occurred this run.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_finding_id", "source_finding_name", "claim_id", "note"],
+        "properties": {
+          "source_finding_id": {
+            "type": "string",
+            "description": "Copied verbatim from Node 13's UNMAPPED-AUDIT-* finding_id."
+          },
+          "source_finding_name": {
+            "type": "string",
+            "description": "Copied verbatim from Node 13's source_finding_name for this entry."
+          },
+          "claim_id": {
+            "type": ["string", "null"],
+            "description": "Copied verbatim from Node 13's claim_id for this entry, or null if absent."
+          },
+          "note": {
+            "type": "string",
+            "description": "Plain-language note stating there IS a relevant, real audit finding in this general area, and that no canonical claim match was established -- must NOT claim this independently confirms any specific finding in review_assessments."
+          }
+        }
+      }
+    }
+  }
+}

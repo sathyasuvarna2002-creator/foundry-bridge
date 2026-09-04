@@ -1,0 +1,150 @@
+{
+  "type": "object",
+  "properties": {
+    "architectural_risks": {
+      "type": "array",
+      "description": "Same array shape Node 07 produces, additive to it (both flow into Node 13 unmodified). Open, evidence-driven set -- no fixed length. One object per distinct finding.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "risk_name": { "type": "string" },
+          "finding_id": {
+            "type": "string",
+            "description": "GENERATED for this run: {CATEGORY-SLUG}-{NN}. NOT a stable cross-run key -- claim_id is.",
+            "pattern": "^(CENTRALISATION|UPGRADEABILITY|DEPENDENCY|ECONOMIC-DEPENDENCY|ACCESS-CONTROL|GOVERNANCE|TRUST-BOUNDARY|COMPOSABILITY|ASSET-CUSTODY|OPERATIONAL-RESILIENCE)-[0-9]{2}$"
+          },
+          "risk_category": {
+            "type": "string",
+            "description": "Exact enum value, with a space. Single best fit.",
+            "enum": [
+              "Centralisation", "Upgradeability", "Dependency", "Economic Dependency",
+              "Access Control", "Governance", "Trust Boundary", "Composability",
+              "Asset Custody", "Operational Resilience"
+            ]
+          },
+          "claim_id": {
+            "type": "string",
+            "description": "STABLE identifier: literal function/variable/state-variable names verbatim from this finding's own evidence array, uppercased, sorted alphabetically, hyphen-joined, protocol-slug-prefixed. Never derived from risk_category, severity, or risk_name.",
+            "pattern": "^[A-Z0-9_]+(-[A-Z0-9_]+){1,7}$"
+          },
+          "validation_target": {
+            "type": "object",
+            "properties": {
+              "protocol": { "type": "string" },
+              "primary_component": {
+                "type": "string",
+                "description": "Contract/module name copied verbatim from the source, not paraphrased."
+              },
+              "mechanism_tokens": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Literal function/variable names verbatim from the source. Same tokens claim_id is built from."
+              },
+              "dependency_chain": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Ordered causal chain, outermost call to root data source, if described. Empty array if not applicable."
+              }
+            },
+            "required": ["protocol", "primary_component", "mechanism_tokens", "dependency_chain"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low", "Informational"],
+            "description": "Normalized from the source's own rating -- see provenance.original_severity_label for the verbatim original."
+          },
+          "description": { "type": "string" },
+          "architectural_rationale": { "type": "string" },
+          "affected_components": { "type": "array", "items": { "type": "string" } },
+          "supporting_observations": { "type": "array", "items": { "type": "string" } },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Verbatim quotes from the source only. No paraphrasing."
+          },
+          "governance_model": {
+            "type": "string",
+            "enum": ["EOA", "Multisig", "Timelock", "DAO", "Unknown"],
+            "description": "Almost always 'Unknown' unless the source explicitly states who controls the relevant role."
+          },
+          "runtime_validation_candidate": { "type": "boolean" },
+          "runtime_validation_rationale": { "type": "string" },
+          "related_risks": { "type": "array", "items": { "type": "string" } },
+          "mitigation_considerations": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "From the source's own recommended-mitigation text only. Empty array if none."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence in extraction faithfulness, not the finding's validity. High (0.85-1.0) for a clear primary-source finding; lower if reconstructed from a secondary summary or fields were implied rather than stated."
+          },
+          "confidence_rationale": { "type": "string" },
+
+          "provenance": {
+            "type": "object",
+            "description": "NEW field vs Node 07's schema. Exists for the dismissed-finding tracker to key off -- Node 13 ignores it.",
+            "properties": {
+              "source_type": {
+                "type": "string",
+                "enum": ["AUDIT_FINDING", "INCIDENT_POSTMORTEM", "BUG_BOUNTY_REPORT", "OTHER"]
+              },
+              "source_firm": {
+                "type": "string",
+                "description": "e.g. 'Code4rena', 'Sigma Prime', 'Certik'. Verbatim as stated."
+              },
+              "source_document_title": { "type": "string" },
+              "source_url": {
+                "type": "string",
+                "description": "Exact URL/file this was extracted from. Required."
+              },
+              "date_flagged": {
+                "type": "string",
+                "description": "ISO 8601 (YYYY-MM-DD) date the finding was ORIGINALLY raised -- not today, not parsing date."
+              },
+              "original_severity_label": {
+                "type": "string",
+                "description": "Exact severity label as it appears in the source, before normalization. Use \"NOT_STATED\" if none appears -- this schema has no nullable fields."
+              },
+              "original_disposition": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": ["DISMISSED_AS_INTENDED", "ACKNOWLEDGED_NO_FIX", "FIXED", "PARTIALLY_FIXED", "UNKNOWN"],
+                    "description": "UNKNOWN unless the source itself explicitly states a resolution/status."
+                  },
+                  "verbatim_quote": {
+                    "type": "string",
+                    "description": "Exact quoted sentence establishing disposition, or \"NOT_STATED\" if category is UNKNOWN."
+                  },
+                  "quote_location": {
+                    "type": "string",
+                    "description": "e.g. 'sponsor comment', 'report status column'. \"NOT_STATED\" if verbatim_quote is \"NOT_STATED\"."
+                  },
+                  "extraction_confidence": {
+                    "type": "string",
+                    "enum": ["VERIFIED_PRIMARY_QUOTE", "SECONDARY_SOURCE_UNVERIFIED", "NOT_STATED"],
+                    "description": "VERIFIED_PRIMARY_QUOTE only if verbatim_quote is from this primary source document."
+                  }
+                },
+                "required": ["category", "verbatim_quote", "quote_location", "extraction_confidence"]
+              }
+            },
+            "required": ["source_type", "source_firm", "source_document_title", "source_url", "date_flagged", "original_severity_label", "original_disposition"]
+          }
+        },
+        "required": [
+          "finding_id", "risk_name", "risk_category", "claim_id", "validation_target",
+          "severity", "description", "architectural_rationale", "affected_components",
+          "supporting_observations", "evidence", "governance_model",
+          "runtime_validation_candidate", "runtime_validation_rationale", "related_risks",
+          "mitigation_considerations", "confidence", "confidence_rationale", "provenance"
+        ]
+      }
+    }
+  },
+  "required": ["architectural_risks"]
+}

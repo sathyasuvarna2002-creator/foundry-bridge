@@ -1,0 +1,207 @@
+{
+  "contract_profile": {
+    "name": "CErc20Delegator (cUSDC market, representative of Compound V2's cToken architecture)",
+    "contract_type": "Upgradeable Proxy / Money Market Token",
+    "architectural_role": "Interest-bearing receipt token representing a supplied position in a single-asset Compound V2 lending market; also the entry point for mint, redeem, borrow, and repay operations on that market.",
+    "description": "CErc20Delegator is an unstructured-storage delegatecall proxy that forwards all calls not explicitly handled by the delegator itself to a separate CErc20Delegate (or, for the DAI market, CDaiDelegate) implementation contract, while keeping all state in the proxy's own storage. A single admin address controls which implementation the proxy points to.",
+    "source_files": [
+      "contracts/CErc20Delegator.sol",
+      "contracts/CToken.sol",
+      "contracts/CTokenInterfaces.sol",
+      "contracts/Comptroller.sol",
+      "contracts/ErrorReporter.sol",
+      "contracts/CDaiDelegate.sol",
+      "contracts/CErc20.sol"
+    ],
+    "evidence": [
+      "contract CErc20Delegator is CErc20Interface, CDelegatorInterface, CTokenInterface",
+      "constructor sets admin = payable(msg.sender), then calls _setImplementation(implementation_, false, becomeImplementationData), then sets admin = admin_"
+    ],
+    "confidence": 0.95
+  },
+  "architectural_patterns": [
+    {
+      "name": "Delegator/Delegate Upgradeable Proxy",
+      "description": "The market contract (CErc20Delegator) holds all storage and forwards unrecognised calls via delegatecall to a separately deployed implementation contract (CErc20Delegate or CDaiDelegate), which executes in the delegator's own storage context.",
+      "evidence": [
+        "function _setImplementation(address implementation_, bool allowResign, bytes memory becomeImplementationData) override public { require(msg.sender == admin, \"CErc20Delegator::_setImplementation: Caller must be admin\"); ... }",
+        "CDaiDelegate.sol: function _becomeImplementation(bytes memory data) override public",
+        "CDaiDelegate.sol: function _resignImplementation() override public"
+      ],
+      "confidence": 0.95
+    },
+    {
+      "name": "External Policy Engine (Comptroller) Gating",
+      "description": "Market-level actions (mint, borrow) are not solely gated by the market contract itself; they call out to a separate Comptroller contract's hook functions, which can independently allow or reject the action.",
+      "evidence": [
+        "Comptroller.sol: function mintAllowed(address cToken, address minter, uint mintAmount) override external returns (uint) { require(!mintGuardianPaused[cToken], \"mint is paused\"); ... }",
+        "Comptroller.sol: function borrowAllowed(...) ... require(!borrowGuardianPaused[cToken], \"borrow is paused\"); ..."
+      ],
+      "confidence": 0.93
+    }
+  ],
+  "internal_modules": [
+    {
+      "name": "Interest Accrual Module",
+      "description": "Tracks and compounds borrow interest using a per-block rate sourced from an external InterestRateModel contract, applied to totalBorrows and totalReserves on each accrueInterest() call.",
+      "evidence": [
+        "CToken.sol: interestRateModel state variable of type InterestRateModel",
+        "borrowRatePerBlock() and supplyRatePerBlock() delegate to interestRateModel"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "privileged_entities": [
+    {
+      "name": "admin",
+      "role": "Market-level administrator",
+      "permissions": [
+        "Change the proxy's implementation contract (_setImplementation)",
+        "Change the market's reserve factor (_setReserveFactor)",
+        "Add/reduce reserves and other admin-gated maintenance functions"
+      ],
+      "evidence": [
+        "address payable public admin (CTokenInterfaces.sol)",
+        "require(msg.sender == admin, \"CErc20Delegator::_setImplementation: Caller must be admin\")",
+        "_setReserveFactorFresh: if (msg.sender != admin) { revert SetReserveFactorAdminCheck(); }"
+      ],
+      "confidence": 0.92
+    },
+    {
+      "name": "Pause Guardian (Comptroller-level)",
+      "role": "Protocol-wide operational authority able to unilaterally freeze new supply or borrow activity per market",
+      "permissions": [
+        "Set mintGuardianPaused[cToken] via _setMintPaused",
+        "Set borrowGuardianPaused[cToken] via _setBorrowPaused"
+      ],
+      "evidence": [
+        "Comptroller.sol: function _setMintPaused(CToken cToken, bool state) public returns (bool) { ... mintGuardianPaused[address(cToken)] = state; }",
+        "Comptroller.sol: function _setBorrowPaused(CToken cToken, bool state) public returns (bool) { ... borrowGuardianPaused[address(cToken)] = state; }",
+        "Real governance record: a Compound DAO proposal to pause new supply and borrow across all V2 markets and raise every market's reserve factor to 100% passed with unanimous community support and was scheduled for on-chain execution on 20 Oct 2025 (source: Compound Community Forum, '[Gauntlet] Compound V2 Deprecation Proposal') -- direct evidence that this authority is not merely theoretical but has actually been exercised at protocol scope."
+      ],
+      "confidence": 0.85
+    }
+  ],
+  "upstream_dependencies": [
+    {
+      "name": "Comptroller",
+      "type": "Policy/Risk Engine",
+      "architectural_role": "External contract each market defers to for mint/borrow authorization decisions before executing the underlying transfer logic.",
+      "evidence": [
+        "CToken.sol: comptroller.mintAllowed(...) style hook calls precede mintFresh's own logic"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "name": "InterestRateModel",
+      "type": "Interest Rate Model",
+      "architectural_role": "External, per-market-swappable contract that computes the current borrow rate from a market's cash, borrows, and reserves figures.",
+      "evidence": [
+        "CToken.sol: interestRateModel.getBorrowRate(cash, borrows, reserves) style call inside accrueInterest()"
+      ],
+      "confidence": 0.9
+    },
+    {
+      "name": "Underlying ERC-20 Token",
+      "type": "ERC20 Token",
+      "architectural_role": "The asset each market wraps; the market's own token balance of this asset is a direct input to the market's exchange rate computation.",
+      "evidence": [
+        "CErc20.sol: function getCashPrior() virtual override internal view returns (uint) { EIP20Interface token = EIP20Interface(underlying); return token.balanceOf(address(this)); }"
+      ],
+      "confidence": 0.95
+    }
+  ],
+  "downstream_dependencies": [],
+  "upgradeability": {
+    "pattern": "Delegatecall Proxy (Delegator/Delegate)",
+    "upgrade_authority": "admin (single address, governance model not determinable from source alone)",
+    "upgrade_flow": [
+      "admin calls _setImplementation(newImplementation, allowResign, becomeImplementationData) on the CErc20Delegator proxy",
+      "Proxy optionally calls _resignImplementation() on the outgoing implementation via delegatecall",
+      "Proxy updates its stored implementation address",
+      "Proxy calls _becomeImplementation(becomeImplementationData) on the new implementation via delegatecall"
+    ],
+    "evidence": [
+      "function _setImplementation(address implementation_, bool allowResign, bytes memory becomeImplementationData) override public { require(msg.sender == admin, \"CErc20Delegator::_setImplementation: Caller must be admin\"); ... }"
+    ],
+    "confidence": 0.93
+  },
+  "financial_mechanisms": [
+    {
+      "name": "Exchange Rate Computation",
+      "description": "The market's exchangeRate (used to convert between the interest-bearing receipt token and the underlying asset) is computed from getCashPrior(), totalBorrows, totalReserves, and totalSupply. For standard markets, getCashPrior() returns the market contract's own raw ERC-20 balanceOf(address(this)) reading of the underlying token -- a value that can be increased by ANY direct ERC-20 transfer to the market contract, not only by the market's own mint() entry point.",
+      "evidence": [
+        "CErc20.sol: getCashPrior() returns EIP20Interface(underlying).balanceOf(address(this))",
+        "exchangeRate is derived from getCashPrior() + totalBorrows - totalReserves, divided by totalSupply (CToken.sol exchangeRateStoredInternal logic)",
+        "mintFresh/mintBehalfFresh increment totalSupply and pull underlying in via doTransferIn, but do not gate or reconcile against balanceOf(address(this)) separately -- any other direct transfer to the contract is reflected in getCashPrior() identically to a transfer that went through mint()"
+      ],
+      "confidence": 0.88
+    },
+    {
+      "name": "Interest Accrual",
+      "description": "totalBorrows and the borrow index compound over time based on a per-block borrow rate sourced from the external InterestRateModel, applied via accrueInterest(), which is callable by anyone (not admin-gated).",
+      "evidence": [
+        "CToken.sol: accrueInterest() computes borrowRateMantissa via interestRateModel.getBorrowRate(cash, borrows, reserves), then compounds totalBorrows and borrowIndex by the elapsed block delta"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "implemented_security_mechanisms": [
+    {
+      "name": "Admin-Gated Implementation Control",
+      "description": "Only the admin address can repoint the proxy's implementation.",
+      "evidence": [
+        "require(msg.sender == admin, \"CErc20Delegator::_setImplementation: Caller must be admin\")"
+      ],
+      "confidence": 0.95
+    },
+    {
+      "name": "Admin-Gated Reserve Factor Control",
+      "description": "Only the admin address can change a market's reserve factor; the current source implementation reverts with a dedicated custom error rather than a plain require string, distinct from the delegator's own string-revert convention.",
+      "evidence": [
+        "CToken.sol _setReserveFactorFresh: if (msg.sender != admin) { revert SetReserveFactorAdminCheck(); }",
+        "ErrorReporter.sol: error SetReserveFactorAdminCheck();"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "name": "Comptroller-Level Pause Guardian",
+      "description": "A protocol-wide authority, separate from any individual market's admin, can independently freeze new supply or borrow activity per market via the Comptroller.",
+      "evidence": [
+        "require(!mintGuardianPaused[cToken], \"mint is paused\")",
+        "require(!borrowGuardianPaused[cToken], \"borrow is paused\")"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "critical_assets": [
+    {
+      "name": "Underlying Token Balance Held By Market Contract",
+      "description": "The pool of underlying assets each market contract directly custodies, read via balanceOf(address(this)) for standard markets and feeding directly into the exchange rate calculation.",
+      "evidence": [
+        "EIP20Interface(underlying).balanceOf(address(this)) inside getCashPrior()"
+      ],
+      "confidence": 0.9
+    }
+  ],
+  "trust_assumptions": [
+    {
+      "name": "Single Admin Address Per Market",
+      "description": "Each market's security depends on trusting a single admin address not to repoint the implementation to malicious code or arbitrarily change the reserve factor; the architecture does not itself constrain what kind of address (EOA, multisig, Timelock, DAO) holds this role.",
+      "evidence": [
+        "address payable public admin",
+        "No on-chain evidence in the market contract itself establishing whether admin is an EOA or a multi-party governance construct"
+      ],
+      "confidence": 0.85
+    },
+    {
+      "name": "Pause Guardian Authority Is Real and Has Been Exercised",
+      "description": "The architecture grants a protocol-wide authority the power to unilaterally and permanently disable new supply/borrow for every market. This is not a purely theoretical trust assumption: real governance history shows this authority being exercised at full protocol scope.",
+      "evidence": [
+        "mintGuardianPaused / borrowGuardianPaused mappings gate every market's mint/borrow path",
+        "Compound Community Forum record of a DAO-approved, unanimously supported proposal to pause supply/borrow and raise reserve factors to 100% across all V2 markets, scheduled for execution 20 Oct 2025"
+      ],
+      "confidence": 0.85
+    }
+  ]
+}

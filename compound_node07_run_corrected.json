@@ -1,0 +1,263 @@
+[
+  {
+    "output": {
+      "architectural_risks": [
+        {
+          "risk_name": "Concentrated administrative control over market-critical configuration",
+          "finding_id": "CENTRALISATION-01",
+          "risk_category": "Centralisation",
+          "claim_id": "COMPOUND-ADMIN-_REDUCERESERVESFRESH-_SETCOMPTROLLER-_SETINTERESTRATEMODELFRESH-_SETRESERVEFACTORFRESH",
+          "validation_target": {
+            "protocol": "Compound",
+            "primary_component": "CToken",
+            "mechanism_tokens": [
+              "admin",
+              "_setComptroller",
+              "_setReserveFactorFresh",
+              "_reduceReservesFresh",
+              "_setInterestRateModelFresh"
+            ],
+            "dependency_chain": []
+          },
+          "severity": "Critical",
+          "description": "A single admin account controls multiple market-critical configuration operations (assigning the comptroller, changing reserve factor, reducing reserves, and swapping the interest rate model). These authorities allow the admin to change policy decision points, extract reserves, and replace the economic model that drives interest accrual, giving a single actor the ability to materially alter market behaviour and asset flows at the architectural level.",
+          "architectural_rationale": "The contract exposes multiple admin-only functions that affect protocol control and asset flows: _setComptroller can repoint the market to a different policy/controller; _setInterestRateModelFresh swaps the external model that computes per-block borrow rates used by accrueInterest; _setReserveFactorFresh changes how much interest is sequestered as reserves; _reduceReservesFresh moves reserves out of the market to the admin. Because these capabilities are gated by the single admin role (the admin state variable) and the pendingAdmin pattern only controls transfer of that role, a compromised or malicious admin/privileged key can change the protocol's policy surface and custody assumptions without additional architectural checks.",
+          "affected_components": [
+            "CToken",
+            "admin (state variable)",
+            "_setComptroller",
+            "_setInterestRateModelFresh",
+            "_reduceReservesFresh"
+          ],
+          "supporting_observations": [
+            "admin variable present and used as sole authority for multiple setter functions (CToken)",
+            "_setComptroller requires msg.sender == admin (CToken)",
+            "_setReserveFactorFresh, _reduceReservesFresh, _setInterestRateModelFresh check msg.sender == admin (CToken)",
+            "pendingAdmin workflow exists but requires acceptance by pendingAdmin (CToken)"
+          ],
+          "evidence": [
+            "admin (CToken)",
+            "_setComptroller (CToken)",
+            "_setReserveFactorFresh (CToken)",
+            "_reduceReservesFresh (CToken)",
+            "_setInterestRateModelFresh (CToken)"
+          ],
+          "governance_model": "Unknown",
+          "runtime_validation_candidate": true,
+          "runtime_validation_rationale": "Static/runtime tests can verify the presence of admin state and admin-only setter functions and their msg.sender checks (e.g., _setComptroller, _setInterestRateModelFresh, _reduceReservesFresh) by calling or invoking access checks in a controlled test environment.",
+          "related_risks": [],
+          "mitigation_considerations": [
+            "Split sensitive powers across multiple governance actors (timelock, multisig, or DAO).",
+            "Require multi-party approval for changes to comptroller and interestRateModel (e.g., multisig or on-chain governance vote).",
+            "Introduce immutable limits or guardrails (e.g., maximum change per time window or caps on reserve reductions) to constrain unilateral admin actions."
+          ],
+          "confidence": 0.95,
+          "confidence_rationale": "Evidence is direct and complete: the Architecture Model explicitly lists admin state and the identified admin-only functions. The causal claim (single admin controls these functions) follows with no meaningful inferential step and is corroborated by multiple explicit observations in the model."
+        },
+        {
+          "risk_name": "Dependence on external Comptroller for policy and liquidation pricing",
+          "finding_id": "DEPENDENCY-01",
+          "risk_category": "Dependency",
+          "claim_id": "COMPOUND-BORROWALLOWED-COMPTROLLER-LIQUIDATEBORROWFRESH-LIQUIDATECALCULATESEIZETOKENS-MINTALLOWED",
+          "validation_target": {
+            "protocol": "Compound",
+            "primary_component": "Comptroller",
+            "mechanism_tokens": [
+              "comptroller",
+              "liquidateCalculateSeizeTokens",
+              "mintAllowed",
+              "borrowAllowed",
+              "liquidateBorrowFresh"
+            ],
+            "dependency_chain": [
+              "liquidateBorrowFresh",
+              "liquidateCalculateSeizeTokens"
+            ]
+          },
+          "severity": "High",
+          "description": "Core permissioning and liquidation pricing are architecturally delegated to an external Comptroller contract. The market defers mint/borrow/repay/transfer/seize permission decisions to comptroller.*Allowed hooks and relies on comptroller.liquidateCalculateSeizeTokens to compute collateral seize amounts, meaning the market's ability to permit operations and execute correct liquidations depends on the Comptroller's correctness and availability.",
+          "architectural_rationale": "The CToken implementation calls comptroller.mintAllowed, borrowAllowed, repayBorrowAllowed, transferAllowed, seizeAllowed, and calls comptroller.liquidateCalculateSeizeTokens during liquidations, with post-operation verify hooks (mintVerify, borrowVerify, etc.). These calls make the Comptroller the authoritative policy decision point and the source of liquidation pricing; any change, misconfiguration, or failure in the Comptroller therefore directly affects whether users can supply/borrow/transfer and how much collateral a liquidator may seize, shifting critical protocol behaviour outside the CToken's own logic.",
+          "affected_components": [
+            "CToken",
+            "Comptroller",
+            "liquidateBorrowFresh",
+            "comptroller.liquidateCalculateSeizeTokens"
+          ],
+          "supporting_observations": [
+            "ComptrollerInterface defines mintAllowed, borrowAllowed, liquidateCalculateSeizeTokens and verify hooks (ComptrollerInterface)",
+            "CToken calls comptroller.mintAllowed, comptroller.borrowAllowed and comptroller.liquidateCalculateSeizeTokens in core flows (CToken)",
+            "Post-operation verify hooks like comptroller.mintVerify are invoked after state changes (CToken)"
+          ],
+          "evidence": [
+            "comptroller (ComptrollerInterface)",
+            "mintAllowed (ComptrollerInterface / CToken)",
+            "borrowAllowed (ComptrollerInterface / CToken)",
+            "liquidateCalculateSeizeTokens (ComptrollerInterface / CToken)",
+            "liquidateBorrowFresh (CToken)"
+          ],
+          "governance_model": "Unknown",
+          "runtime_validation_candidate": true,
+          "runtime_validation_rationale": "Runtime validation can confirm that CToken calls the listed comptroller functions (presence of external calls/call sites and ABI usage), and can exercise liquidation paths in tests to observe the call to liquidateCalculateSeizeTokens, although it cannot prove correctness of external comptroller logic without deploying alternative comptroller implementations.",
+          "related_risks": [
+            "CENTRALISATION-01"
+          ],
+          "mitigation_considerations": [
+            "Ensure Comptroller governance is decentralized and subject to transparent multi-party controls or governance processes.",
+            "Add defensive checks in CToken for extreme or nonsensical seize amounts returned by comptroller (e.g., sanity bounds) before applying state changes.",
+            "Document and limit the set of comptroller-controlled operations or require upgrade/time-locking for replacing the Comptroller."
+          ],
+          "confidence": 0.92,
+          "confidence_rationale": "Architecture clearly and repeatedly shows comptroller.*Allowed and liquidateCalculateSeizeTokens calls (multiple independent observations). The mapping from those calls to a dependency on Comptroller is direct; limited uncertainty remains about the Comptroller's governance model and whether additional off-chain controls exist, so confidence is slightly below the top band."
+        },
+        {
+          "risk_name": "Economic dependency on external InterestRateModel for interest accrual",
+          "finding_id": "ECONOMIC-DEPENDENCY-01",
+          "risk_category": "Economic Dependency",
+          "claim_id": "COMPOUND-ACCRUEINTEREST-GETBORROWRATE-INTERESTRATEMODEL",
+          "validation_target": {
+            "protocol": "Compound",
+            "primary_component": "CToken",
+            "mechanism_tokens": [
+              "accrueInterest",
+              "interestRateModel",
+              "getBorrowRate"
+            ],
+            "dependency_chain": [
+              "accrueInterest",
+              "interestRateModel",
+              "getBorrowRate"
+            ]
+          },
+          "severity": "High",
+          "description": "Per-block interest accrual and the borrow/supply economic behaviour depend on an external InterestRateModel that supplies the borrow rate. Changes or misbehavior in that model directly change interest accumulation, borrowIndex progression, and effective balances across the market, with systemic effects on liquidity and borrower incentives.",
+          "architectural_rationale": "accrueInterest calls interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves) to compute simpleInterestFactor and interestAccumulated, then updates borrowIndex, totalBorrows, and totalReserves. Because interest accounting and exchangeRate computations depend on borrowIndex and totalBorrows, the external InterestRateModel is a root economic input whose outputs materially determine accrued interest and therefore creditors' and debtors' balances and incentives at the protocol level.",
+          "affected_components": [
+            "CToken",
+            "InterestRateModel",
+            "accrueInterest",
+            "borrowIndex"
+          ],
+          "supporting_observations": [
+            "interestRateModel.getBorrowRate(...) is invoked in accrueInterest and borrowRatePerBlock (CToken)",
+            "accrueInterest updates borrowIndex, totalBorrows, totalReserves using the rate returned by interestRateModel (CToken)"
+          ],
+          "evidence": [
+            "interestRateModel (CToken)",
+            "getBorrowRate (InterestRateModel / CToken)",
+            "accrueInterest (CToken)"
+          ],
+          "governance_model": "Unknown",
+          "runtime_validation_candidate": true,
+          "runtime_validation_rationale": "Runtime checks can verify that accrueInterest calls interestRateModel.getBorrowRate and that the returned rate is consumed to update borrowIndex/totalBorrows in controlled tests, but cannot validate the economic soundness of an arbitrary external model without domain-specific rate simulations.",
+          "related_risks": [
+            "CENTRALISATION-01"
+          ],
+          "mitigation_considerations": [
+            "Subject InterestRateModel changes to governance controls (timelock/multisig) and public review before activation.",
+            "Implement sanity checks and bounds on returned borrow rates inside CToken (e.g., compare to borrowRateMaxMantissa) and fail if outside expected ranges.",
+            "Consider using parameterised, auditable, or on-chain verified rate models with fallback behaviour in case of anomalous outputs."
+          ],
+          "confidence": 0.9,
+          "confidence_rationale": "The Architecture Model explicitly shows accrueInterest invoking interestRateModel.getBorrowRate and updating economic state; the causal chain is direct and corroborated by multiple module descriptions. Some uncertainty remains because the exact governance/guarding of the InterestRateModel is not specified, preventing the highest confidence band."
+        },
+        {
+          "risk_name": "Expanded trust boundary due to reliance on underlying ERC-20 semantics (including non-standard tokens)",
+          "finding_id": "TRUST-BOUNDARY-01",
+          "risk_category": "Trust Boundary",
+          "claim_id": "COMPOUND-DOTRANSFERIN-GETCASHPRIOR-UNDERLYING",
+          "validation_target": {
+            "protocol": "Compound",
+            "primary_component": "CErc20",
+            "mechanism_tokens": [
+              "doTransferIn",
+              "getCashPrior",
+              "underlying"
+            ],
+            "dependency_chain": [
+              "doTransferIn",
+              "getCashPrior"
+            ]
+          },
+          "severity": "High",
+          "description": "The market's liquidity and accounting assume the underlying ERC-20 behaves according to expected transfer and balance semantics; CErc20 implements assembly-based wrappers to handle non-standard ERC-20s, but the protocol still expands the trust boundary to the token contract's behaviour (fees on transfer, rebasing, blacklisting, hooks, or non-standard side-effects). Such token behaviours can alter getCashPrior and transfer outcomes, causing incorrect liquidity checks, unexpected balances, or accounting mismatches at the architectural level.",
+          "architectural_rationale": "CErc20 sets the underlying address in its constructor and uses doTransferIn/doTransferOut (which call EIP20NonStandardInterface.transferFrom/transfer and use inline assembly to interpret return data) and getCashPrior (which reads EIP20Interface(underlying).balanceOf(address(this))). These architectural choices make the contract's cash accounting depend directly on the underlying token's transfer and balance semantics; any nonstandard economic behaviour of the token becomes an architectural dependency affecting liquidity checks (getCashPrior >= redeemAmount) and interest accrual assumptions.",
+          "affected_components": [
+            "CErc20",
+            "underlying (ERC-20 token)",
+            "doTransferIn",
+            "getCashPrior"
+          ],
+          "supporting_observations": [
+            "constructor sets underlying and calls EIP20Interface(underlying).totalSupply() (CErc20)",
+            "doTransferIn and doTransferOut use EIP20NonStandardInterface.transferFrom/transfer with inline assembly to handle non-returning tokens (CErc20)",
+            "getCashPrior returns EIP20Interface(underlying).balanceOf(address(this)) and is used in liquidity checks (CErc20)"
+          ],
+          "evidence": [
+            "underlying (CErc20)",
+            "doTransferIn (CErc20)",
+            "getCashPrior (CErc20)"
+          ],
+          "governance_model": "Unknown",
+          "runtime_validation_candidate": true,
+          "runtime_validation_rationale": "Runtime validation can confirm the presence of doTransferIn/doTransferOut and getCashPrior usage and can exercise interactions with representative ERC-20 implementations (standard and non-standard) in tests to observe how the market reacts, but cannot exhaustively validate all possible token behaviors without deploying varied underlying token implementations.",
+          "related_risks": [],
+          "mitigation_considerations": [
+            "Restrict supported underlying tokens to those with well-understood semantics and documented behaviors (e.g., audited, standard ERC-20).",
+            "Add explicit handling or limits for known nonstandard behaviours (fee-on-transfer, rebasing) and document how they affect accounting.",
+            "Require marketplaces or governance to approve underlying assets and conduct compatibility checks before whitelisting tokens."
+          ],
+          "confidence": 0.9,
+          "confidence_rationale": "The Architecture Model explicitly documents underlying, doTransferIn/doTransferOut using non-standard wrappers, and getCashPrior balance checks; the claim that token behaviour expands the trust boundary follows directly. Uncertainty remains because the model already shows assembly-based handling which mitigates some classes of nonstandard tokens, preventing the very highest confidence band."
+        },
+        {
+          "risk_name": "Composability surface via external seize/liquidation interactions with other cTokens and liquidators",
+          "finding_id": "COMPOSABILITY-01",
+          "risk_category": "Composability",
+          "claim_id": "COMPOUND-LIQUIDATEBORROWFRESH-SEIZE-SEIZEALLOWED",
+          "validation_target": {
+            "protocol": "Compound",
+            "primary_component": "CToken",
+            "mechanism_tokens": [
+              "liquidateBorrowFresh",
+              "seize",
+              "seizeAllowed"
+            ],
+            "dependency_chain": []
+          },
+          "severity": "Medium",
+          "description": "CToken exposes an external seize function and coordinates cross-contract liquidation flows (calling cTokenCollateral.accrueInterest() and cTokenCollateral.seize(...) and relying on comptroller.seizeAllowed). These cross-contract interactions create a composability surface where other cToken implementations or external liquidators must be assumed to behave correctly; differences in implementation expectations can cause unexpected state interactions or failures at the protocol level.",
+          "architectural_rationale": "Liquidation flows call into external cTokenCollateral contracts (accrueInterest and seize) and rely on comptroller.seizeAllowed to permit collateral transfer. The existence of external seize and inter-market calls means the market's correctness depends on the behaviour of peers (other cToken contracts) and external liquidators; architectural coupling between markets increases the surface where cross-contract assumptions (reentrancy, state freshness, reserve/accounting invariants) must hold across different contracts and deploys.",
+          "affected_components": [
+            "CToken",
+            "seize (external)",
+            "liquidateBorrowFresh",
+            "other cToken markets / cTokenCollateral"
+          ],
+          "supporting_observations": [
+            "function seize(address liquidator, address borrower, uint seizeTokens) external (CToken)",
+            "liquidateBorrowFresh calls cTokenCollateral.accrueInterest() and cTokenCollateral.seize(...) (CToken)",
+            "comptroller.seizeAllowed is invoked around seize operations (CToken / ComptrollerInterface)"
+          ],
+          "evidence": [
+            "seize (CToken)",
+            "liquidateBorrowFresh (CToken)",
+            "seizeAllowed (ComptrollerInterface)"
+          ],
+          "governance_model": "Unknown",
+          "runtime_validation_candidate": true,
+          "runtime_validation_rationale": "Runtime tests can exercise cross-market liquidation flows in a controlled environment to validate call ordering and that CToken invokes external markets' accrueInterest and seize functions; however exhaustive validation of all external counterparty behaviours is not possible without deploying many variants of cToken peers.",
+          "related_risks": [
+            "DEPENDENCY-01"
+          ],
+          "mitigation_considerations": [
+            "Define and document explicit cross-market invariants and expected interfaces for seize/accrueInterest to reduce ambiguity for integrators.",
+            "Introduce sanity checks before and after external calls (e.g., verify balances, non-negative invariants) to reduce risk from misbehaving external peers.",
+            "Where practical, limit trusted peer markets via governance or require peers to meet an interface/conformance standard before interoperation."
+          ],
+          "confidence": 0.85,
+          "confidence_rationale": "Architecture clearly shows seize and cross-market calls (explicit, multiple observations). The claim that this increases composability surface is direct, but the precise impact depends on the behaviour of external peers (not fully described in the model), so confidence is high but not maximal."
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,131 @@
+{
+  "type": "object",
+  "properties": {
+    "architectural_risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "risk_name": {
+            "type": "string"
+          },
+          "canonical_finding_id": {
+            "type": "string",
+            "description": "REQUIRED. Choose exactly one canonical finding ID whose DEFINITION below most closely matches the actual content of this risk. Compare against the definitions themselves, not the order they are listed in -- do NOT assign IDs based on list position or the order you generated your risks in.\n\nF01 = Upgradeable Proxy Control Risk\nF02 = Registry Centralisation Risk\nF03 = ACL Manager Role Concentration\nF04 = Pool Configurator Centralised Configuration Authority\nF05 = Umbrella Exclusive Deficit Elimination Authority\nF06 = Asset Price Oracle Dependency\nF07 = aToken and Debt Token External Implementation Custody Dependency\nF08 = Interest Rate Strategy Externalization\nF09 = Composability Risk: External Flashloan Receivers & Optional Debt Opening\nF10 = Trust Boundary Expansion via Position Manager Delegation\nF11 = Reserve Registry Operational Dependency",
+            "enum": [
+              "F01",
+              "F02",
+              "F03",
+              "F04",
+              "F05",
+              "F06",
+              "F07",
+              "F08",
+              "F09",
+              "F10",
+              "F11"
+            ]
+          },
+          "risk_category": {
+            "type": "string",
+            "enum": [
+              "Centralisation",
+              "Upgradeability",
+              "Dependency",
+              "Economic Dependency",
+              "Access Control",
+              "Governance",
+              "Trust Boundary",
+              "Composability",
+              "Asset Custody",
+              "Operational Resilience"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "Critical",
+              "High",
+              "Medium",
+              "Low",
+              "Informational"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "What the risk is, in plain architectural terms."
+          },
+          "supporting_architectural_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Named architectural patterns (e.g. 'Proxy / Initializer upgrade pattern') that this risk arises from."
+          },
+          "supporting_components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The specific contracts/components involved in this risk."
+          },
+          "architectural_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Direct quotes or precise paraphrases of source code / interface definitions that establish this risk. Each item should be independently verifiable against the source."
+          },
+          "risk_rationale": {
+            "type": "string",
+            "description": "The reasoning connecting the architectural evidence to the stated risk -- why this pattern constitutes a risk, and what could go wrong."
+          },
+          "related_risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "canonical_finding_id values of other findings that are architecturally related to this one."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Your remaining uncertainty about the SPECIFIC causal claim being made -- NOT whether evidence exists (every reported finding already has evidence by construction, per the inclusion rules). Must reflect genuine per-finding variation across the 11 findings; do not default to 1.0 for every finding. See the CONFIDENCE section of the system prompt for the full anchored scale (0.95-1.00 / 0.85-0.94 / 0.70-0.84 / below 0.70) and worked example."
+          },
+          "confidence_rationale": {
+            "type": "string",
+            "description": "A short explanation of why this specific confidence value was chosen -- what evidence supports it, and what remaining uncertainty (if any) keeps it below 1.0."
+          },
+          "runtime_validation_candidate": {
+            "type": "boolean",
+            "description": "Whether this risk's underlying claim could plausibly be tested against a live/forked contract."
+          },
+          "runtime_validation_rationale": {
+            "type": "string",
+            "description": "If runtime_validation_candidate is true, a concrete description of what a Foundry test could check to validate this claim."
+          }
+        },
+        "required": [
+          "risk_name",
+          "canonical_finding_id",
+          "risk_category",
+          "severity",
+          "description",
+          "supporting_architectural_patterns",
+          "supporting_components",
+          "architectural_evidence",
+          "risk_rationale",
+          "related_risks",
+          "confidence",
+          "confidence_rationale",
+          "runtime_validation_candidate",
+          "runtime_validation_rationale"
+        ]
+      }
+    }
+  },
+  "required": [
+    "architectural_risks"
+  ]
+}

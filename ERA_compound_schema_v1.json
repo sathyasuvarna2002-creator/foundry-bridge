@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evidence Review Assessment (Compound)",
+  "description": "Final probabilistic assessment of each Compound canonical finding based on all available evidence sources, including comparison against Node 17 (Compound)'s mathematical DST fusion. Compound variant: open taxonomy (no fixed count), unmapped findings can come from either Node 07 (architecture) or Node 08 (audit) and are reported separately as unscored context, and one finding (UPGRADEABILITY_01) is a NEGATIVE_CONTROL requiring polarity-aware interpretation rather than a different field vocabulary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["review_assessments", "unmapped_context"],
+  "properties": {
+    "review_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_findings", "supported", "partially_supported", "outside_scope", "contradicted", "average_review_confidence", "unmapped_context_count", "negative_control_findings", "overall_assessment"],
+      "properties": {
+        "total_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Must equal the number of items in review_assessments -- i.e. the number of canonical (non-UNMAPPED-*) finding_ids Node 17 (Compound) actually output this run. Open taxonomy: no fixed count."
+        },
+        "supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings strongly supported by evidence. For UPGRADEABILITY_01, 'Supported' means the absence claim (risk ruled out) is supported -- see NEGATIVE CONTROL FINDING in the system prompt. Still counted here the same as any other Supported finding."
+        },
+        "partially_supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings with some supporting evidence"
+        },
+        "outside_scope": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings whose review_assessment is Outside Scope (rare -- Node 16 assigns a status to every finding it receives). Not the same axis as audit_relationship = Outside Scope, which is common and expected."
+        },
+        "contradicted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings whose review_assessment is Contradicted -- includes findings where deterministic validation reported CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION. If UPGRADEABILITY_01 is ever Contradicted, that is the alarming case (an upgrade mechanism appears to exist) -- do not undersell it in overall_assessment."
+        },
+        "average_review_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Average confidence across all review_assessments items."
+        },
+        "unmapped_context_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of items in unmapped_context. Must equal that array's length."
+        },
+        "negative_control_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of items in review_assessments whose finding_polarity is NEGATIVE_CONTROL. Expected to be 1 (UPGRADEABILITY_01) under the current spec; included so downstream consumers can verify the polarity-aware finding was actually reviewed without parsing every item."
+        },
+        "overall_assessment": {
+          "type": "string",
+          "description": "Overall summary of evidence consistency across all reviewed findings. May note the existence of unmapped context in general terms (e.g. real architecture or audit coverage exists in an area not yet connected to a specific finding), but must not attribute it to any specific finding here. If UPGRADEABILITY_01 is included, this summary must not describe it in language that could be read as an upgradeability risk being present."
+        }
+      }
+    },
+    "review_assessments": {
+      "type": "array",
+      "description": "Evidence-based assessment for each canonical finding Node 17 (Compound) output this run, EXCLUDING any finding_id beginning with 'UNMAPPED-' (either the plain or the '-AUDIT-' shape). Open taxonomy: no fixed count, no fixed enum of finding_ids. One item per finding_id, no duplicates, no omissions, no invented finding_ids.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "finding",
+          "finding_id",
+          "finding_polarity",
+          "status_interpretation",
+          "severity",
+          "review_assessment",
+          "review_confidence",
+          "audit_relationship",
+          "consensus_level",
+          "evidence_sources_present",
+          "deterministic_status",
+          "evidence_summary",
+          "review_reasoning",
+          "fusion_comparison_note"
+        ],
+        "properties": {
+          "finding": {
+            "type": "string",
+            "description": "Name of the architectural finding, copied from Node 17 (Compound)'s finding_name for this finding_id -- not re-worded."
+          },
+          "finding_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "REQUIRED. Copy this value exactly from Node 17 (Compound)'s output for the matching finding -- do NOT re-derive, guess, or assign by list position. Open taxonomy: Compound finding_ids (e.g. UPGRADEABILITY_01, ACCESS_CONTROL_01, ASSET_CUSTODY_01, OPERATIONAL_RESILIENCE_01, ECONOMIC_DEPENDENCY_01) are not a fixed enum and may vary run to run as the anchor-token spec evolves. Never an UNMAPPED-* value (either shape) -- those go in unmapped_context instead."
+          },
+          "finding_polarity": {
+            "type": "string",
+            "enum": ["STANDARD", "NEGATIVE_CONTROL"],
+            "description": "REQUIRED. Copied verbatim from Node 16 (Compound)'s finding_polarity for this finding_id -- never re-derived. STANDARD for the overwhelming majority of findings; NEGATIVE_CONTROL is expected only for UPGRADEABILITY_01 under the current spec. When NEGATIVE_CONTROL, the finding's stated claim is the ABSENCE of the named risk -- see NEGATIVE CONTROL FINDING in the system prompt before writing evidence_summary/review_reasoning/fusion_comparison_note for this item."
+          },
+          "status_interpretation": {
+            "type": "string",
+            "enum": ["RISK_RULED_OUT", "RISK_CONFIRMED", "RISK_CONTRADICTED", "INDETERMINATE"],
+            "description": "REQUIRED. Copied verbatim from Node 16 (Compound)'s status_interpretation for this finding_id -- never re-derived. Derived upstream from (deterministic_status, finding_polarity), so it already encodes the polarity-aware reading -- e.g. RISK_RULED_OUT on UPGRADEABILITY_01 means the same thing as FULLY_SUPPORTED does on a STANDARD finding: the claim as stated is confirmed."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low", "Informational"],
+            "description": "Severity of the finding, copied from Node 13 (Compound)'s per-finding severity field (the fused/computed severity, already accounting for both sources when a finding is merged) -- not re-assessed here."
+          },
+          "review_assessment": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "Overall evidence-based assessment across ALL sources combined, answering whether the finding AS STATED is backed by evidence. Must be 'Contradicted' whenever Node 16's deterministic status is CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION -- never softened to Partially Supported in those cases. Uses the SAME four-value vocabulary regardless of finding_polarity -- polarity changes how a human should interpret 'Supported' (see finding_polarity/status_interpretation), it does not add a fifth value or change what this field means."
+          },
+          "review_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence in this evidence-based assessment (0.0-1.0). Reflects evidence quality and agreement, not the finding's own severity. Your own independent judgment, reported alongside Node 17's fused output, not a substitute for it."
+          },
+          "audit_relationship": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "How Node 08's audit evidence specifically relates to THIS finding -- a separate axis from review_assessment. 'Outside Scope' when this finding's Node 13 sources does not include NODE_08_AUDIT (the common default). 'Supported'/'Partially Supported' when sources DOES include NODE_08_AUDIT and source_findings.node08_audit corroborates. It is normal for review_assessment=Supported and audit_relationship=Outside Scope to appear together."
+          },
+          "consensus_level": {
+            "type": "string",
+            "enum": ["Strong", "Moderate", "Limited"],
+            "description": "Overall agreement between the available evidence sources."
+          },
+          "evidence_sources_present": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["architectural", "deterministic", "historical", "temporal", "audit"],
+            "properties": {
+              "architectural": { "type": "boolean", "description": "Architectural evidence present" },
+              "deterministic": { "type": "boolean", "description": "Deterministic validation present" },
+              "historical": { "type": "boolean", "description": "Historical precedent present" },
+              "temporal": { "type": "boolean", "description": "Temporal evidence present. Unlike Venus (permanently false, no such node exists), Compound has a real 12_Temporal_Evidence_Engine -- set this from whether this run's Node 12 payload actually had usable content, not a hardcoded value." },
+              "audit": { "type": "boolean", "description": "TRUE only if this finding's Node 13 sources includes NODE_08_AUDIT (a real, matched audit finding) -- not true merely because unmapped context exists elsewhere in the run." }
+            }
+          },
+          "deterministic_status": {
+            "type": "string",
+            "enum": ["FULLY_SUPPORTED", "PARTIALLY_SUPPORTED", "MIXED_SUPPORT_AND_CONTRADICTION", "PARTIALLY_CONTRADICTED", "CONTRADICTED", "UNRESOLVED"],
+            "description": "The exact finding-level status copied from Node 16 (Compound)'s output for this finding_id."
+          },
+          "evidence_summary": {
+            "type": "string",
+            "description": "2-3 sentence summary of what evidence says about this finding. May cite mapped audit evidence (sources includes NODE_08_AUDIT) directly. Must NOT cite unmapped_context entries as evidence for this finding. For UPGRADEABILITY_01, must explicitly state the ruled-out/confirmed framing (see NEGATIVE CONTROL FINDING in the system prompt) -- never write a sentence a skimming reader could mistake for 'this risk is present.'"
+          },
+          "review_reasoning": {
+            "type": "string",
+            "description": "Your reasoning for this assessment. For any EXPERIMENT-type proposition reporting EXECUTED_PRECONDITION_UNMET, describe it accurately as 'tested but a real precondition wasn't met,' never as 'not tested.'"
+          },
+          "fusion_comparison_note": {
+            "type": "string",
+            "description": "Plain-language comparison of Node 07's raw confidence (or explicit note if fusion_applicable=false), Node 16's deterministic evidence, and Node 17's mathematically fused belief/plausibility/BetP for this finding. Do not recompute, adjust, or contradict Node 17's numbers. Read divergence.interval_position correctly: 'below_belief' is the structurally expected default whenever Node 16 shows no contradiction and must NOT be narrated as individually meaningful; only 'above_plausibility' is a genuine, worth-naming divergence. If Node 17's dst.primary.polarity_warning is non-null for this finding (only possible on UPGRADEABILITY_01), restate its meaning here explicitly rather than omitting it. Also name explicitly, when present: (1) real Node 16 contradiction (K>0) that did not proportionally lower Node 17's fused belief; (2) a ceiling effect where the fused belief tracks deterministic support almost regardless of Node 07's confidence."
+          }
+        }
+      }
+    },
+    "unmapped_context": {
+      "type": "array",
+      "description": "One entry per Node 13 (Compound) finding_id beginning with 'UNMAPPED-' this run -- covers BOTH shapes: plain 'UNMAPPED-N' (Node 07 architecture findings that didn't anchor-token-match) and 'UNMAPPED-AUDIT-N' (Node 08 audit findings that didn't). Real findings that could not be anchor-token-matched to any canonical spec finding. Reported as context only: never scored, never treated as confirming, corroborating, or changing the status/confidence/fusion result of any finding in review_assessments. May be empty if no such findings occurred this run.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_finding_id", "source", "source_finding_name", "claim_id", "resolution_type", "note"],
+        "properties": {
+          "source_finding_id": {
+            "type": "string",
+            "description": "Copied verbatim from Node 13's UNMAPPED-* or UNMAPPED-AUDIT-* finding_id."
+          },
+          "source": {
+            "type": "string",
+            "enum": ["NODE_07_ARCHITECTURE", "NODE_08_AUDIT"],
+            "description": "Which upstream node this unmapped finding actually came from -- read from Node 13's own source field on the unmapped record, or infer from ID shape as a fallback (plain UNMAPPED-N is architecture, UNMAPPED-AUDIT-N is audit). Never omit or guess arbitrarily; this is the field that keeps architecture-sourced and audit-sourced unmapped findings from being conflated."
+          },
+          "source_finding_name": {
+            "type": "string",
+            "description": "Copied verbatim from Node 13's source_finding_name for this entry."
+          },
+          "claim_id": {
+            "type": ["string", "null"],
+            "description": "Copied verbatim from Node 13's claim_id for this entry, or null if absent."
+          },
+          "resolution_type": {
+            "type": "string",
+            "enum": ["UNRESOLVED", "ANCHOR_TOKEN_AMBIGUOUS", "NO_TOKENS_SUPPLIED"],
+            "description": "Copied from Node 13's resolution_debug.resolution_type for this entry -- distinguishes 'no anchor-token overlap with any spec key' (UNRESOLVED) from 'overlapped more than one spec key, refused to guess which' (ANCHOR_TOKEN_AMBIGUOUS) from 'no mechanism_tokens/dependency_chain to match against at all' (NO_TOKENS_SUPPLIED). Carry this distinction into the note rather than flattening every case to the same generic explanation."
+          },
+          "note": {
+            "type": "string",
+            "description": "Plain-language note stating there IS a relevant, real finding in this general area, and that no canonical claim match was established -- must NOT claim this independently confirms any specific finding in review_assessments."
+          }
+        }
+      }
+    }
+  }
+}

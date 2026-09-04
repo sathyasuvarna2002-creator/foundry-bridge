@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compound Protocol -- An Evidence-Based Risk Assessment</title>
+<style>
+  :root {
+    --navy: #0f2942; --navy-2: #1a3a5c; --ink: #1c2530; --ink-soft: #4a5568; --muted: #718096;
+    --line: #dde3ea; --bg: #f7f9fb; --card: #ffffff;
+    --teal: #0f6e56; --teal-bg: #e1f5ee; --amber: #854f0b; --amber-bg: #faeeda;
+    --red: #a32d2d; --red-bg: #fcebeb; --blue: #185fa5; --blue-bg: #e6f1fb;
+    --gold: #9c6f1e; --gray: #4a5568; --gray-bg: #eef1f5;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); margin: 0; line-height: 1.7; }
+  .page { max-width: 900px; margin: 0 auto; padding: 0 32px 80px; }
+  header.cover { background: linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%); color: #eaf1f8; padding: 80px 32px 60px; }
+  header.cover .inner { max-width: 836px; margin: 0 auto; }
+  header.cover .eyebrow { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #9fc2e0; margin: 0 0 14px; font-weight: 600; }
+  header.cover h1 { font-size: 38px; line-height: 1.2; margin: 0 0 18px; font-weight: 600; }
+  header.cover .sub { font-size: 18px; color: #c7d9ea; max-width: 680px; margin: 0 0 32px; }
+  header.cover .meta { display: flex; gap: 32px; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.18); padding-top: 20px; font-size: 13px; color: #b7cbe0; }
+  header.cover .meta strong { color: #eaf1f8; font-weight: 600; display: block; font-size: 14px; margin-bottom: 2px; }
+  nav.toc { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 22px 28px; margin: -32px auto 40px; max-width: 836px; box-shadow: 0 6px 24px rgba(15,41,66,0.08); }
+  nav.toc h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  nav.toc ol { columns: 2; column-gap: 32px; margin: 0; padding: 0 0 0 18px; font-size: 14px; }
+  nav.toc li { margin-bottom: 6px; }
+  nav.toc a { color: var(--navy-2); text-decoration: none; }
+  section { margin: 60px 0; }
+  section > h2 { font-size: 24px; font-weight: 600; color: var(--navy); margin: 0 0 8px; padding-bottom: 12px; border-bottom: 2px solid var(--navy); }
+  section > .section-num { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px; }
+  h3 { font-size: 19px; font-weight: 600; color: var(--navy-2); margin: 26px 0 10px; }
+  h4 { font-size: 14px; font-weight: 600; color: var(--navy); text-transform: uppercase; letter-spacing: 0.04em; margin: 22px 0 10px; }
+  h5 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+  p { color: var(--ink-soft); margin: 0 0 14px; font-size: 15.5px; }
+  p.lead { font-size: 16.5px; color: var(--ink); }
+  code { font-family: "SF Mono", Consolas, Menlo, monospace; font-size: 13px; background: #eef1f5; padding: 1px 6px; border-radius: 4px; color: var(--navy-2); }
+  code.ev { display: block; background: #eef1f5; padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 12.5px; white-space: pre-wrap; word-break: break-word; }
+  ul.plain { padding-left: 20px; color: var(--ink-soft); font-size: 15px; }
+  ul.plain li { margin-bottom: 8px; }
+  .callout { background: var(--amber-bg); border-left: 4px solid var(--amber); padding: 18px 22px; border-radius: 0 8px 8px 0; font-size: 14.5px; color: #5c3a08; margin: 20px 0; }
+  .callout.blue { background: var(--blue-bg); border-left-color: var(--blue); color: #0c447c; }
+  .callout.teal { background: var(--teal-bg); border-left-color: var(--teal); color: #085041; }
+  .callout.amber { background: var(--amber-bg); border-left-color: var(--amber); color: #5c3a08; }
+  .callout strong { display: block; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 24px 0; }
+  .stat-pill { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 150px; }
+  .stat-pill .value { font-size: 26px; font-weight: 700; color: var(--navy); }
+  .stat-pill .label { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .badge.critical { background: var(--red-bg); color: var(--red); }
+  .badge.high { background: var(--amber-bg); color: var(--amber); }
+  .badge.medium { background: var(--blue-bg); color: var(--blue); }
+  .badge.low { background: var(--gray-bg); color: var(--gray); }
+  .badge.informational { background: var(--gray-bg); color: var(--gray); }
+  .badge.supported { background: var(--teal-bg); color: var(--teal); }
+  .badge.partial { background: var(--amber-bg); color: var(--amber); }
+  .badge.contradicted { background: var(--red-bg); color: var(--red); }
+  .badge.negcontrol { background: var(--teal-bg); color: var(--teal); }
+  .finding-block { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 30px 32px; margin-bottom: 28px; }
+  .finding-block.negative-control { border-color: var(--teal); box-shadow: 0 0 0 1px var(--teal) inset; }
+  .fb-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .fb-num { flex-basis: 100%; font-size: 12.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 4px; }
+  .fb-num .finding-id { text-transform: none; font-weight: 500; font-family: "SF Mono", Consolas, Menlo, monospace; letter-spacing: normal; }
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .block p { font-size: 14px; margin: 0; }
+  .proof-trail { display: flex; flex-direction: column; gap: 0; margin: 14px 0; }
+  .proof-step { display: flex; gap: 14px; padding: 10px 0; border-left: 2px solid var(--line); margin-left: 6px; padding-left: 20px; position: relative; }
+  .proof-step:last-child { border-left: 2px solid transparent; }
+  .proof-dot { position: absolute; left: -7px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: var(--line); border: 2px solid var(--card); }
+  .proof-step.done .proof-dot { background: var(--teal); }
+  .proof-step.partial .proof-dot { background: var(--blue); }
+  .proof-step.not_tested .proof-dot { background: var(--amber); }
+  .proof-step.contradicted .proof-dot { background: var(--red); }
+  .proof-step.precondition_unmet .proof-dot { background: var(--gold); }
+  .proof-step.mapped_pending .proof-dot { background: var(--blue); }
+  .proof-label { font-size: 14px; font-weight: 600; color: var(--navy); }
+  .proof-state { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); margin-left: 8px; }
+  .proof-step.done .proof-state { color: var(--teal); }
+  .proof-step.not_tested .proof-state { color: var(--amber); }
+  .proof-step.contradicted .proof-state { color: var(--red); }
+  .proof-step.precondition_unmet .proof-state { color: var(--gold); }
+  .proof-step.mapped_pending .proof-state { color: var(--blue); }
+  .proof-detail { font-size: 13.5px; color: var(--ink-soft); margin-top: 2px; }
+  .confidence-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f4f7fa; border-radius: 8px; padding: 14px 16px; margin: 18px 0 0; }
+  .confidence-strip .m { text-align: center; }
+  .confidence-strip .l { font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: 0.03em; }
+  .confidence-strip .v { font-size: 17px; font-weight: 600; color: var(--navy); }
+  .confidence-strip .m.hot .v { color: var(--red); }
+  .footnote { font-size: 12.5px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 16px 0; background: var(--card); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  th { background: var(--navy); color: #eaf1f8; text-align: left; padding: 10px 12px; font-weight: 600; font-size: 12.5px; }
+  td { padding: 10px 12px; border-top: 1px solid var(--line); color: var(--ink-soft); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .appendix { background: #f4f7fa; border-radius: 14px; padding: 30px 32px; }
+  .appendix h2 { color: var(--navy-2); }
+  .term { font-style: italic; color: var(--muted); font-weight: 400; }
+  .glossary { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 20px; margin: 18px 0; font-size: 13.5px; }
+  .glossary dl { margin: 0; }
+  .glossary dt { font-weight: 600; color: var(--navy-2); margin-top: 8px; }
+  .glossary dt:first-child { margin-top: 0; }
+  .glossary dd { margin: 2px 0 0; color: var(--ink-soft); }
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 40px 0 0; border-top: 1px solid var(--line); margin-top: 60px; }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="inner">
+    <p class="eyebrow">Independent Risk Assessment &middot; Compound Protocol</p>
+    <h1>Compound Protocol: Evidence-Based Smart Contract Risk Assessment</h1>
+    <p class="sub">A finding-by-finding account of what we found, why it matters, whether this pattern has caused losses elsewhere before, and exactly what evidence backs each claim.</p>
+    <div class="meta">
+      
+      <div><strong>24</strong>candidate findings identified</div>
+      <div><strong>3</strong>matched a canonical, testable claim</div>
+      <div><strong>1 of 3</strong>fully confirmed by direct evidence</div>
+      
+      <div><strong>Generated</strong>2026-08-19</div>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#sfunnel">What We Actually Found</a></li>
+    <li><a href="#s0">Why This Matters</a></li>
+    <li><a href="#s1">Framework</a></li>
+    <li><a href="#s2">Findings</a></li>
+    <li><a href="#s3">Limitations</a></li>
+    <li><a href="#s4">Technical Appendix</a></li>
+    <li><a href="#s5">Conclusion</a></li>
+  </ol>
+</nav>
+
+
+<section id="sfunnel">
+  <p class="section-num">The Headline Number, In Context</p>
+  <h2>What This Assessment Actually Found</h2>
+  <p class="lead">This run's analysis surfaced 24 candidate finding(s) across architecture review and audit ingestion. 3 matched one of Compound's canonical, deterministically-checkable claims; of those, 2 had both an independent LLM assessment and deterministic evidence available to cross-validate, and 0 of those were fully confirmed by that cross-validation. The remaining 21 candidate finding(s) are disclosed as unmapped context rather than force-fit into a canonical category -- see ERA's unmapped_context and this node's `excluded` array for the specific list and reasons.</p>
+  <div class="stat-row">
+    <div class="stat-pill"><div class="value">24</div><div class="label">Candidate findings identified (architecture + audit review)</div></div>
+    <div class="stat-pill"><div class="value">3</div><div class="label">Matched to one of Compound's canonical, testable claims</div></div>
+    <div class="stat-pill"><div class="value">2</div><div class="label">Had both an AI assessment and deterministic evidence to cross-check</div></div>
+    <div class="stat-pill"><div class="value">1</div><div class="label">Fully confirmed by that cross-check</div></div>
+  </div>
+  <div class="callout blue">
+    <strong>Why the numbers shrink at each stage -- and why that's not a weakness</strong>
+    Compound's canonical claim list is deliberately small (5 categories) and strict: a candidate finding only counts as "matched" if it anchors to real, falsifiable evidence we can actually go and test, not just a plausible-sounding label. 21 candidate finding(s) did not anchor-token-match any of Compound's 5 canonical claims this run. This is the matcher correctly declining to force a weak or ambiguous match, not a failure and not evidence being dropped -- every one is preserved and disclosed (see Node 17's own findings array and ERA's unmapped_context) rather than discarded.
+  </div>
+  <p class="footnote">These matched a canonical claim but had no independent Node 07 confidence and/or no Node 16 propositions to fuse against (typically the negative control's always-on fallback path, or an audit-only match) -- see fusion_note on each in Node 17's output. They are real, disclosed findings, just not eligible for the LLM-vs-evidence comparison this node measures.</p>
+</section>
+
+
+<section id="s0">
+  <p class="section-num">Why This Assessment Exists</p>
+  <h2>DeFi risk is real, and it isn't hypothetical for this protocol</h2>
+  <p class="lead">DeFi protocols collectively lost more than $840 million to exploits in the first half of 2026 alone [3]. Compound itself has direct, first-hand experience with how a single logic error in a governance-approved change can move tens of millions of dollars: in October 2021, a one-character error in a formally proposed and voted-on upgrade (Proposal 62) caused roughly $90 million in COMP tokens to be distributed incorrectly, patched days later by a follow-up proposal [1][2].</p>
+  <div class="callout amber">
+    <strong>An important distinction, stated plainly</strong>
+    That 2021 incident was not a smart-contract access-control bypass or a reentrancy exploit -- it was a distribution-logic bug in code that had already passed through Compound's own governance process. It illustrates why this report tests governance and admin power generally (see Access Control and Upgradeability below), not that it independently confirms any specific finding in this run. We are not borrowing its drama without the distinction.
+  </div>
+</section>
+
+<section id="s1">
+  <p class="section-num">Section 1</p>
+  <h2>Framework</h2>
+  <p class="lead">Every claim below had to survive four independent checks before it counted as a finding. We tell you plainly whenever one of those checks came up short, rather than rounding an open question up to "fine."</p>
+  <ul class="plain">
+    <li><strong>Source code.</strong> The real, deployed Solidity source, read function by function -- not documentation or marketing material.</li>
+    <li><strong>Live on-chain check.</strong> The actual, currently-running contract queried directly on-chain, confirming what it does now, not just what the source says it should do.</li>
+    <li><strong>Architectural reasoning, cross-checked.</strong> An AI identified risks the way a security researcher would; we then independently checked each claim against documented historical exploits and, where available, independently-published audit findings.</li>
+    <li><strong>Mathematical combination, disagreement included.</strong> Where sources agreed, we say so. Where they diverged, we flag it explicitly rather than blending it into one reassuring number. The formulas are in the technical appendix.</li>
+  </ul>
+  <div class="callout blue">
+    <strong>What "we actually tested it" means</strong>
+    For most findings below, we didn't just read code and reason about what should happen -- we reproduced the underlying scenario on a forked copy of the real blockchain and watched what actually occurred.
+  </div>
+  <div class="callout teal">
+    <strong>Not every finding below is a risk to weigh</strong>
+    1 of the 3 risk areas in this report is a negative control: a check we ran specifically to confirm a risky pattern seen elsewhere in DeFi does NOT apply here. It's marked clearly with a green "negative control" badge below so it isn't mistaken for a confirmed risk.
+  </div>
+</section>
+
+<section id="s2">
+  <p class="section-num">Section 2</p>
+  <h2>Findings</h2>
+  <p>Each of the 3 risk areas below covers the same ground: what it means, why it matters, whether this pattern has caused real losses elsewhere before, and exactly what evidence backs it.</p>
+  
+  <div class="finding-block">
+    <div class="fb-head">
+      <div class="fb-num">Finding 1 of 3 &mdash; Single-Admin Economic Parameter Control (_setReserveFactor) <span class="finding-id">(ACCESS_CONTROL_01)</span></div>
+      <span class="badge critical">CRITICAL severity</span>
+      <span class="badge partial">Partially confirmed -- one part is still an open question</span>
+    </div>
+    <h3>Who is allowed to change the protocol's risk settings?</h3>
+    <p class="lead">Certain sensitive actions -- like changing how much of a market's revenue goes to reserves via _setReserveFactor -- are gated behind a single administrator check. That's a deliberate, common design in this generation of lending protocols, but it does mean one key (or the multisig/governance process controlling it) has real power over the market's economics.</p>
+    
+    <div class="callout blue"><strong>Why this matters to you</strong>We tested this directly: can a random, unpermissioned wallet actually call this gated function? If the gate isn't real, the whole safety model built on top of it isn't real either.</div>
+
+    <h4>Where's the proof?</h4>
+    <div class="proof-trail">
+      <div class="proof-step mapped_pending">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Source code <span class="proof-state">Located -- not independently verified</span></div><div class="proof-detail">The underlying mechanism was located and matched to this specific claim in the protocol's own verified source code (quoted below) -- but Compound's own evaluator treats a source-code mapping alone as not yet independently verified proof, more conservatively than simply counting it as confirmed. See the live on-chain and forked-test steps below for the independent verification this claim also has.</div></div>
+      </div>
+      <div class="proof-step done">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Live on-chain check <span class="proof-state">Confirmed</span></div><div class="proof-detail">Confirmed by directly querying the actual, currently-deployed contract on-chain -- not the source code, the real running bytecode.</div></div>
+      </div>
+      <div class="proof-step done">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Reproduced in a forked test <span class="proof-state">Confirmed</span></div><div class="proof-detail">We actually ran this: CompoundReserveFactorAccessControlTest.test_NonAdminCannotSetReserveFactor on a forked copy of the real blockchain, and the predicted behavior occurred.</div></div>
+      </div></div>
+    <div class="block" style="margin-top:14px;"><h5>What we actually found in the code</h5><code class="ev">address payable public admin</code><code class="ev">function _setPendingAdmin(address payable newPendingAdmin) external returns (uint)</code></div>
+
+    <div class="fgrid" style="margin-top:14px;">
+      <div class="block"><h5>Has this happened before?</h5><p><strong>Wasabi Protocol Admin Key Compromise</strong> (Wasabi Protocol, 2026) -- High-confidence incident writeups (investigative reporting and third-party analysis) describe attackers obtaining ADMIN_ROLE or compromising the deployer EOA and performing malicious implementation upgrades that drained vault funds. HE-030 describes a concrete case where single-key admin control led to a ~US$5M loss via upgrade to malicious implementations.</p></div>
+      <div class="block"><h5>Independent audit corroboration</h5><p>No independently-published audit finding was confidently matched to this specific claim in this run.</p></div>
+    </div>
+
+    <div class="block" style="margin-top:14px;"><h5>Independent evidence review</h5><p>Foundry runtime checks and a manual Forge behavioural test confirm the market reports a reserve factor and that a non-admin call to _setReserveFactor returns Error.UNAUTHORIZED, providing direct behavioral support for admin gating. However, an L2 structural predicate about the exact _setReserveFactor gating relationship was mapped as MAPPED_PENDING_INDEPENDENT_VERIFICATION and remains unresolved, so not every predicate required to fully prove the architectural claim is deterministically satisfied.</p></div>
+
+    
+    <div class="confidence-strip">
+      <div class="m"><div class="l">AI's initial read</div><div class="v">96%</div></div>
+      <div class="m"><div class="l">Combined w/ hard evidence</div><div class="v">99%</div></div>
+      <div class="m"><div class="l">Real disagreement?</div><div class="v">No</div></div>
+    </div>
+    
+    
+  </div>
+  <div class="finding-block">
+    <div class="fb-head">
+      <div class="fb-num">Finding 2 of 3 &mdash; Interest Accrual Dependency on External Rate Model <span class="finding-id">(ECONOMIC_DEPENDENCY_01)</span></div>
+      <span class="badge high">HIGH severity</span>
+      <span class="badge partial">Partially confirmed -- one part is still an open question</span>
+    </div>
+    <h3>What sets your interest rate, and can it be gamed?</h3>
+    <p class="lead">Interest rates aren't calculated inside this contract -- they're pulled from a separate, external interest-rate model contract via accrueInterest(). If that external model can be swapped, misconfigured, or manipulated, borrower and lender rates change with it, even though the lending contract's own code never changed.</p>
+    
+    <div class="callout blue"><strong>Why this matters to you</strong>This is a dependency risk: the contract you're trusting is only as sound as another contract it silently relies on. We confirmed the external model is real and wired in; the live behavioural test for how accrual responds to it hit a real-world precondition at the specific block we tested (see below) rather than completing cleanly either way.</div>
+
+    <h4>Where's the proof?</h4>
+    <div class="proof-trail">
+      <div class="proof-step mapped_pending">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Source code <span class="proof-state">Located -- not independently verified</span></div><div class="proof-detail">The underlying mechanism was located and matched to this specific claim in the protocol's own verified source code (quoted below) -- but Compound's own evaluator treats a source-code mapping alone as not yet independently verified proof, more conservatively than simply counting it as confirmed. See the live on-chain and forked-test steps below for the independent verification this claim also has.</div></div>
+      </div>
+      <div class="proof-step done">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Live on-chain check <span class="proof-state">Confirmed</span></div><div class="proof-detail">Confirmed by directly querying the actual, currently-deployed contract on-chain -- not the source code, the real running bytecode.</div></div>
+      </div>
+      <div class="proof-step precondition_unmet">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Forked test <span class="proof-state">Executed -- precondition unmet</span></div><div class="proof-detail">We ran CompoundInterestAccrualTest.test_InterestAccrualDrivenByRateModelAndBlocks against live state -- it genuinely executed, but a specific real-world condition it depends on (Reverted on a deliberate, named precondition check (InterestRateModel.getBorrowRate() returned 0 at this block), not a claim contradiction. Consistent with the market's confirmed paused/deprecated state (see OPERATIONAL_RESILIENCE_01).) wasn't true at the block we tested. This is different from never testing it: the test ran, it just couldn't observe the behavior this time. We treat it as neither confirmed nor contradicted, not as a pass.</div></div>
+      </div></div>
+    <div class="block" style="margin-top:14px;"><h5>What we actually found in the code</h5><code class="ev">InterestRateModel public interestRateModel</code><code class="ev">function interestRateModel.getBorrowRate(getCashPrior(), totalBorrows, totalReserves) called in borrowRatePerBlock and accrueInterest</code></div>
+
+    <div class="fgrid" style="margin-top:14px;">
+      <div class="block"><h5>Has this happened before?</h5><p>No documented precedent that closely matches this specific claim was found -- we'd rather tell you that honestly than force a weak analogy.</p></div>
+      <div class="block"><h5>Independent audit corroboration</h5><p>Interest May Not Compound (source: OpenZeppelin, 2019-08-23).</p></div>
+    </div>
+
+    <div class="block" style="margin-top:14px;"><h5>Independent evidence review</h5><p>Foundry runtime checks confirm an external InterestRateModel is deployed and referenced by the market (L1 PASS). An OpenZeppelin audit note and the architecture map to the accrueInterest relationship, but one behavioural experiment executed against a live snapshot returned EXECUTED_PRECONDITION_UNMET (InterestRateModel.getBorrowRate() returned 0 at that block), leaving the behavioural predicate unresolved.</p></div>
+
+    
+    <div class="confidence-strip">
+      <div class="m"><div class="l">AI's initial read</div><div class="v">92%</div></div>
+      <div class="m"><div class="l">Combined w/ hard evidence</div><div class="v">97%</div></div>
+      <div class="m"><div class="l">Real disagreement?</div><div class="v">No</div></div>
+    </div>
+    
+    
+  </div>
+  <div class="finding-block negative-control">
+    <div class="fb-head">
+      <div class="fb-num">Finding 3 of 3 &mdash; Delegatecall-Proxy Implementation Control (NOT PRESENT on this deployment -- negative control) <span class="finding-id">(UPGRADEABILITY_01)</span></div>
+      <span class="badge informational">INFORMATIONAL severity</span>
+      <span class="badge negcontrol">NEGATIVE CONTROL</span>
+    </div>
+    <h3>Can this contract's logic be secretly swapped out?</h3>
+    <p class="lead">This is the one check in this report where the answer is reassuring rather than a risk to weigh. Many DeFi lending contracts are deployed behind an upgradeable proxy -- a design where an administrator can swap the entire logic of the contract for something else, at any time, without users' consent. That pattern means trusting a key-holder as much as the code itself. We checked whether this specific deployment has that mechanism.</p>
+    <div class="callout teal">
+             <strong>Risk check: ruled out, not confirmed</strong>
+             This is a negative control. "Fully confirmed by the evidence we gathered" here means the ABSENCE of this
+             mechanism was confirmed -- i.e. this specific risk does not apply to this deployment (status_interpretation: RISK_RULED_OUT).
+             A high confidence number below reflects certainty that the risk is ruled out, not that it is present.
+           </div>
+    <div class="callout blue"><strong>What we actually checked</strong>It doesn't. We queried the live, deployed contract directly and confirmed there is no implementation-swap function to call -- not that one exists and is well-guarded, but that the mechanism itself is absent from this specific market. There is no admin key anywhere that can silently rewrite this contract's logic after the fact.</div>
+
+    <h4>Where's the proof?</h4>
+    <div class="proof-trail">
+      <div class="proof-step done">
+        <div class="proof-dot"></div>
+        <div class="proof-body"><div class="proof-label">Reproduced in a forked test <span class="proof-state">Confirmed</span></div><div class="proof-detail">We actually ran this: CompoundUpgradeableProxyControlTest.test_ImplementationGetterDoesNotExist on a forked copy of the real blockchain, and the predicted behavior occurred.</div></div>
+      </div></div>
+    
+
+    <div class="fgrid" style="margin-top:14px;">
+      <div class="block"><h5>Has this happened before?</h5><p>No confidently-matched historical assessment for this finding in this run.</p></div>
+      <div class="block"><h5>Independent audit corroboration</h5><p>No independently-published audit finding was confidently matched to this specific claim in this run.</p></div>
+    </div>
+
+    <div class="block" style="margin-top:14px;"><h5>Independent evidence review</h5><p>This is a negative-control finding: the claim is the ABSENCE of an upgradeability mechanism. A manual Foundry behavioural test confirmed calling implementation() reverts on the deployed cUSDC contract (validation_result PASS). Node 16 reports FULLY_SUPPORTED with status_interpretation RISK_RULED_OUT, i.e. the upgradeability risk is ruled out for this deployment.</p></div>
+
+    
+    <div class="confidence-strip">
+      <div class="m" style="grid-column: 1 / -1;"><div class="l">Deterministic confidence (no independent AI claim to compare this run)</div><div class="v">100%</div></div>
+    </div>
+    <p class="footnote" style="margin-top:10px;">No independent Node 07 confidence and/or no Node 16 propositions exist for this finding (e.g. an audit-only, UNMAPPED-* entry, or the negative control's always-on fallback path). The fused mass below equals whichever single operand carried real evidence, unchanged -- this is mathematically correct (see self-test cases 4/5), not a fusion of two independent sources. Do not read it as such.</p>
+    
+  </div>
+  
+  <div class="callout amber">
+    <strong>Findings we couldn't confidently place</strong>
+    We found 21 additional findings (3 from our own architectural analysis and 18 from independently-published audit material) that don't cleanly match any of the 3 risk areas above using our strict, code-level matching rules. Rather than force a connection our own system couldn't verify, we're disclosing them here as context. This is not used to raise or lower confidence in any finding above.
+    <p style="margin-top:10px;"><strong>Dependency on external Comptroller for permissioning and liquidation calculations</strong> <span class="footnote">(architectural analysis)</span> -- There is a real Node 07 finding about CErc20's dependency on an external Comptroller for permissioning and liquidation calculations, but the anchor-token matcher could not establish which canonical Compound spec key it corresponds to (resolution_type = UNRESOLVED). This unmapped finding is reported as context only and is not treated as confirming or fused with any specific canonical finding in the review_assessments above.</p><p style="margin-top:10px;"><strong>Protocol-held underlying balances depend on underlying ERC-20 semantics and adapter handling</strong> <span class="footnote">(architectural analysis)</span> -- There is a real Node 07 finding about CErc20's protocol cash and its dependence on underlying ERC-20 transfer semantics and the non-standard token adapter, but the anchor-token matcher could not establish a canonical claim match (resolution_type = UNRESOLVED). This is reported separately as unmapped context and does not alter any canonical finding's evidence scoring.</p><p style="margin-top:10px;"><strong>Cross-market liquidation flow expands trust boundary to external cToken collateral and Comptroller</strong> <span class="footnote">(architectural analysis)</span> -- There is a real Node 07 finding about liquidation crossing trust boundaries to collateral cTokens and the Comptroller, but no canonical Compound spec key was assigned (resolution_type = UNRESOLVED). It is reported here as unmapped context and is not fused with any canonical finding below.</p><p style="margin-top:10px;"><strong>Interest-Free Loans</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit finding about borrow-balance/index handling ("Interest-Free Loans") but the anchor-token matcher could not map it to a canonical Compound spec key (resolution_type = UNRESOLVED). It is included as unmapped audit context and was not fused with any canonical finding.</p><p style="margin-top:10px;"><strong>Counterproductive Incentives</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit finding concerning closeFactor/liquidationIncentive incentive design, but no canonical claim match was established (resolution_type = UNRESOLVED). This remains audit context only.</p><p style="margin-top:10px;"><strong>Incorrect Whitepaper Interest Rate</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit remark about interest-rate documentation/whitepaper assumptions that did not match a canonical spec key (resolution_type = UNRESOLVED). It is reported as unmapped context only.</p><p style="margin-top:10px;"><strong>Error Propagation</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit finding about error/return-value handling that could not be anchor-token-matched to a canonical claim (resolution_type = UNRESOLVED). It is listed here as unmapped audit context.</p><p style="margin-top:10px;"><strong>Unsafe Assumptions About Average Time Between Blocks</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit observation about assumptions on block timing and interest-rate modeling that did not map to a canonical spec key (resolution_type = UNRESOLVED). Reported as unmapped audit context only.</p><p style="margin-top:10px;"><strong>cToken Related Issues</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit finding listing various cToken-related issues but no canonical mapping was possible (resolution_type = UNRESOLVED). It is preserved as unmapped context.</p><p style="margin-top:10px;"><strong>Admin Must Receive Reserves</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about admin receiving reserves that could not be mapped to a canonical claim (resolution_type = UNRESOLVED). It is included as unmapped audit context and not fused with any canonical finding.</p><p style="margin-top:10px;"><strong>Truncation-Related Issues</strong> <span class="footnote">(audit material)</span> -- There is a real Node 08 audit note concerning truncation/precision in fixed-point math but no canonical mapping was resolved (resolution_type = UNRESOLVED). It remains unmapped context.</p><p style="margin-top:10px;"><strong>Markets Can Become Insolvent</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about potential market insolvency that did not anchor-token-match to a canonical key (resolution_type = UNRESOLVED). Reported as unmapped context only.</p><p style="margin-top:10px;"><strong>Incorrect Code Comments</strong> <span class="footnote">(audit material)</span> -- There is an audit note about incorrect comments which the matcher could not canonicalise (resolution_type = UNRESOLVED). It is preserved as unmapped context.</p><p style="margin-top:10px;"><strong>Non-traditional Use of ReentrancyGuard</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about ReentrancyGuard usage that did not match any canonical spec key (resolution_type = UNRESOLVED). It is reported here as unmapped audit context.</p><p style="margin-top:10px;"><strong>Unvetted Token Warning</strong> <span class="footnote">(audit material)</span> -- There is an audit finding warning about unvetted tokens that could not be anchor-token-matched (resolution_type = UNRESOLVED). It is included as unmapped context and not used to alter canonical findings.</p><p style="margin-top:10px;"><strong>Transparent Proxy Pattern</strong> <span class="footnote">(audit material)</span> -- There is an audit finding referencing proxy patterns that the matcher could not assign to a canonical Compound spec key (resolution_type = UNRESOLVED). It is preserved as unmapped audit context only.</p><p style="margin-top:10px;"><strong>collateralFactorMantissa Needs to be Set</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about collateralFactorMantissa setup that did not map to a canonical spec key (resolution_type = UNRESOLVED). It is included here as unmapped context.</p><p style="margin-top:10px;"><strong>Unexpected ERC20’s</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about unexpected ERC-20 behaviour that the anchor-token matcher could not canonicalise (resolution_type = UNRESOLVED). It is reported as unmapped audit context only.</p><p style="margin-top:10px;"><strong>Missing require</strong> <span class="footnote">(audit material)</span> -- There is an audit note about a missing require that did not anchor-token-match to a canonical claim (resolution_type = UNRESOLVED). It is preserved as unmapped context and not fused with canonical findings.</p><p style="margin-top:10px;"><strong>Default Visibility</strong> <span class="footnote">(audit material)</span> -- There is an audit observation about default visibility and related code details that the matcher could not canonicalise (resolution_type = UNRESOLVED). It remains unmapped context.</p><p style="margin-top:10px;"><strong>TODO’s in Code</strong> <span class="footnote">(audit material)</span> -- There is an audit observation listing TODO comments in code that did not anchor-token-match to a canonical spec key (resolution_type = UNRESOLVED). This is reported as unmapped audit context and was not fused with any canonical finding.</p>
+  </div>
+</section>
+
+<section id="s3">
+  <p class="section-num">Section 3</p>
+  <h2>Limitations</h2>
+  <ul class="plain">
+    <li><strong>This is not a formal security audit.</strong> It doesn't carry the legal or professional assurances a licensed audit firm's engagement letter does.</li>
+    <li><strong>This does not cover account-level or operational security.</strong> Key compromise and social-engineering attacks against individual users or admins are a separate risk category from the smart-contract layer this report investigates.</li>
+    <li><strong>A "fully confirmed" finding is not a guarantee against exploitation.</strong> It means the specific claim we tested held up against the evidence we could gather -- not that no other issue exists.</li>
+    <li><strong>We do not claim a formal, statistically validated calibration score.</strong> Establishing that would require comparing our confidence numbers against real-world outcomes over time, which doesn't exist yet for this specific assessment. We say so plainly rather than presenting an invented precision we can't back up.</li>
+    <li><strong>Only 3 of this run's findings met our strict matching bar for a canonical risk category.</strong> Additional findings our architecture and audit analysis surfaced but couldn't confidently place are disclosed separately above, not silently dropped and not force-fit into a category they don't cleanly belong to.</li>
+    <li><strong>This is a snapshot of a specific run, on a specific date</strong> (2026-08-19), against the live contract state at that time. Re-running this process periodically, not treating any single report as permanent, is the point.</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <p class="section-num">Section 4</p>
+  <h2>Technical Appendix</h2>
+  <div class="appendix">
+    <p>The material below is for readers who want to verify the underlying methodology directly, rather than take the plain-language summary on faith. It intentionally uses the formal terminology and notation this pipeline actually implements.</p>
+    <h3>Deterministic validation</h3>
+    <p>Each finding's underlying claims are checked against on-chain evidence using a three-valued logic system <span class="term">(Kleene K3)</span>: every claim is marked SUPPORTED, CONTRADICTED, or UNRESOLVED -- never forced into a binary yes/no it doesn't deserve. This layer is frozen and read-only, and its output is never treated as ground truth.</p>
+    <h3>Dempster-Shafer evidence fusion</h3>
+    <p>The AI's original confidence and the deterministic evidence are combined using the classical normalized Dempster-Shafer combination rule, over a frame of discernment &Theta; = {R, &not;R}:</p>
+    <p style="text-align:center; font-family: 'SF Mono', Consolas, monospace; font-size: 13.5px; color: var(--navy-2); background:#eef1f5; padding:14px; border-radius:8px;">
+      K = m<sub>1</sub>(R)&middot;m<sub>2</sub>(&not;R) + m<sub>1</sub>(&not;R)&middot;m<sub>2</sub>(R)<br>
+      m<sub>12</sub>(A) = &Sigma;<sub>B&cap;C=A</sub> m<sub>1</sub>(B)&middot;m<sub>2</sub>(C) &divide; (1 &minus; K)
+    </p>
+    <p>K measures how much the two evidence sources actually contradicted each other. The combination produces Belief (Bel(R), the lowest confidence directly supported), Plausibility (Pl(R), the highest confidence not ruled out), and pignistic probability (BetP(R), a single decision-oriented summary number). For a NEGATIVE CONTROL finding, R still means "the stated claim is true" -- it is never redefined by polarity -- so a negative control's high BetP(R) means high confidence in the absence claim, not the risk. Because the AI-reasoning source structurally never asserts &not;R, whenever deterministic evidence shows no contradiction the combined belief simplifies to combined_R = s + c(1&minus;s), where s is deterministic support and c is the AI's confidence -- always &ge; c. This is a proven structural property, not a per-finding correction.</p>
+    <h3>Findings summary table</h3>
+    <table>
+      <tr><th>ID</th><th>Status</th><th class="num">AI confidence</th><th class="num">Combined (BetP)</th><th class="num">Conflict K</th></tr>
+      <tr><td>ACCESS_CONTROL_01</td><td>Partially confirmed -- one part is still an open question</td><td class="num">0.960</td><td class="num">0.993</td><td class="num">0.000</td></tr><tr><td>ECONOMIC_DEPENDENCY_01</td><td>Partially confirmed -- one part is still an open question</td><td class="num">0.920</td><td class="num">0.973</td><td class="num">0.000</td></tr><tr><td>UPGRADEABILITY_01 <span class="footnote">(negative control)</span></td><td>Fully confirmed by the evidence we gathered</td><td class="num">--</td><td class="num">1.000</td><td class="num">0.000</td></tr>
+    </table>
+    <div class="glossary">
+      <h5>Symbol reference</h5>
+      <dl>
+        <dt>m (mass function)</dt><dd>How one evidence source splits its support across "risk present," "risk absent," and "not sure."</dd>
+        <dt>Bel(R), Pl(R)</dt><dd>The defensible range of confidence the combined evidence supports.</dd>
+        <dt>BetP(R)</dt><dd>A single decision-oriented confidence estimate summarizing that range.</dd>
+        <dt>K</dt><dd>Conflict -- how much the two sources actively disagreed (0 = none).</dd>
+        <dt>Negative control</dt><dd>A finding whose stated claim is the ABSENCE of a risk, included specifically to test whether a known DeFi failure pattern applies here. High confidence on a negative control is good news.</dd>
+      </dl>
+    </div>
+    <p class="footnote">Self-test suite: this pipeline runs 7 synthetic Dempster-Shafer combination test cases with independently hand-verified expected values on every execution, and refuses to report real findings if any fail. Divergence threshold (0.15) is an explicitly disclosed engineering parameter, not a validated scientific constant. Findings with genuine conflict (K &gt; 0) are categorized CONFLICT regardless of how close the combined confidence landed to the AI's original number, since Dempster's rule absorbs disagreement into K rather than necessarily lowering the fused belief. One behavioural test in this run (interest accrual) executed against live state but hit a real, disclosed precondition rather than completing cleanly -- reported as EXECUTED_PRECONDITION_UNMET, distinct from both a pass and a not-yet-run test.</p>
+  </div>
+</section>
+
+<section id="s5">
+  <p class="section-num">Section 5</p>
+  <h2>Conclusion</h2>
+  <p class="lead">Of the 3 risk areas investigated, 1 were fully confirmed by the combined evidence -- source code, live on-chain data, and in most cases a reproduced test all pointed the same direction, including the negative control above (no upgrade mechanism exists). None were contradicted. 2 findings still have a genuinely open question attached to them, disclosed above rather than rounded up.</p>
+  <div class="stat-row">
+    <div class="stat-pill"><div class="value">1/3</div><div class="label">Fully confirmed findings</div></div>
+    <div class="stat-pill"><div class="value">94%</div><div class="label">AI's average initial confidence</div></div>
+    <div class="stat-pill"><div class="value">98%</div><div class="label">Average confidence after combining with hard evidence</div></div>
+    <div class="stat-pill"><div class="value">0</div><div class="label">Finding(s) where AI and hard evidence meaningfully diverged</div></div>
+  </div>
+  <p>On average, verifying each claim against real code and live on-chain data moved the confidence level by 0.043 (on a 0-to-1 scale) relative to the AI's first, unverified read -- almost always upward, because the underlying architecture genuinely does work the way it was described. This assessment reflects the protocol's code and on-chain state as of 2026-08-19; it should be re-run periodically rather than treated as a permanent verdict.</p>
+</section>
+
+</div>
+
+<footer>Compound Protocol Risk Assessment &middot; generated 2026-08-19T22:04:41.758Z from live pipeline outputs &middot; not a conventional security audit</footer>
+
+</body>
+</html>

@@ -1,0 +1,142 @@
+{
+  "type": "object",
+  "properties": {
+    "architectural_risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/risk"
+      }
+    }
+  },
+  "required": [
+    "architectural_risks"
+  ],
+  "$defs": {
+    "risk": {
+      "type": "object",
+      "properties": {
+        "risk_name": {
+          "type": "string"
+        },
+        "canonical_finding_id": {
+          "type": "string",
+          "description": "REQUIRED. Choose exactly one canonical finding ID whose DEFINITION below most closely matches the actual content of this risk. Compare against the definitions themselves, not the order they are listed in -- do NOT assign IDs based on list position or the order you generated your risks in.\n\nF01 = Upgradeable Proxy Control Risk\nF02 = Registry Centralisation Risk\nF03 = ACL Manager Role Concentration\nF04 = Pool Configurator Centralised Configuration Authority\nF05 = Umbrella Exclusive Deficit Elimination Authority\nF06 = Asset Price Oracle Dependency\nF07 = aToken and Debt Token External Implementation Custody Dependency\nF08 = Interest Rate Strategy Externalization\nF09 = Composability Risk: External Flashloan Receivers & Optional Debt Opening\nF10 = Trust Boundary Expansion via Position Manager Delegation\nF11 = Reserve Registry Operational Dependency\nF12 = Accounting-State Manipulation via Unguarded Mutation Path",
+          "enum": [
+            "F01",
+            "F02",
+            "F03",
+            "F04",
+            "F05",
+            "F06",
+            "F07",
+            "F08",
+            "F09",
+            "F10",
+            "F11",
+            "F12"
+          ]
+        },
+        "risk_category": {
+          "type": "string",
+          "enum": [
+            "Centralisation",
+            "Upgradeability",
+            "Dependency",
+            "Economic Dependency",
+            "Access Control",
+            "Governance",
+            "Trust Boundary",
+            "Composability",
+            "Asset Custody",
+            "Operational Resilience"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "Critical",
+            "High",
+            "Medium",
+            "Low",
+            "Informational"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "architectural_rationale": {
+          "type": "string"
+        },
+        "affected_components": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "supporting_observations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "governance_model": {
+          "type": "string",
+          "enum": [
+            "EOA",
+            "Multisig",
+            "Timelock",
+            "DAO",
+            "Unknown"
+          ]
+        },
+        "runtime_validation_candidate": {
+          "type": "boolean"
+        },
+        "runtime_validation_rationale": {
+          "type": "string"
+        },
+        "related_risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mitigation_considerations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Your remaining uncertainty about the SPECIFIC causal claim being made -- NOT whether evidence exists (every reported finding already has evidence by construction, per the inclusion rules). Must reflect genuine per-finding variation across the 12 findings; do not default to 1.0 for every finding. See the CONFIDENCE section of the system prompt for the full anchored scale (0.95-1.00 / 0.85-0.94 / 0.70-0.84 / below 0.70) and worked example."
+        }
+      },
+      "required": [
+        "canonical_finding_id",
+        "risk_name",
+        "risk_category",
+        "severity",
+        "description",
+        "architectural_rationale",
+        "affected_components",
+        "supporting_observations",
+        "evidence",
+        "governance_model",
+        "runtime_validation_candidate",
+        "runtime_validation_rationale",
+        "related_risks",
+        "mitigation_considerations",
+        "confidence"
+      ]
+    }
+  }
+}

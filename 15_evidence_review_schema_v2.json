@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evidence Review Assessment",
+  "description": "Final probabilistic assessment of each finding based on all available evidence sources, including comparison against Node 17's mathematical DST fusion",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["review_assessments"],
+  "properties": {
+    "review_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_findings", "supported", "partially_supported", "outside_scope", "contradicted", "average_review_confidence", "overall_assessment"],
+      "properties": {
+        "total_findings": {
+          "type": "integer",
+          "minimum": 11,
+          "maximum": 11,
+          "description": "Must always be 11 -- the fixed canonical finding count (F01-F11)."
+        },
+        "supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings strongly supported by evidence"
+        },
+        "partially_supported": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings with some supporting evidence"
+        },
+        "outside_scope": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings outside audit scope (not weakness of finding). Note: outside_scope here refers to review_assessment, not audit_relationship -- a finding can have audit_relationship = Outside Scope while review_assessment is Supported, in which case it should NOT be counted here."
+        },
+        "contradicted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings whose review_assessment is Contradicted -- this includes findings where deterministic validation reported CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION."
+        },
+        "average_review_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Average confidence across all 11 assessments"
+        },
+        "overall_assessment": {
+          "type": "string",
+          "description": "Overall summary of evidence consistency across all reviewed findings."
+        }
+      }
+    },
+    "review_assessments": {
+      "type": "array",
+      "description": "Evidence-based assessment for each of the 11 canonical findings (F01-F11). Must contain exactly 11 items, one per canonical_finding_id, with no duplicates and no omissions.",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "finding",
+          "canonical_finding_id",
+          "severity",
+          "review_assessment",
+          "review_confidence",
+          "audit_relationship",
+          "consensus_level",
+          "evidence_sources_present",
+          "deterministic_status",
+          "evidence_summary",
+          "review_reasoning",
+          "fusion_comparison_note"
+        ],
+        "properties": {
+          "finding": {
+            "type": "string",
+            "description": "Name of the architectural finding, copied from the corresponding Architectural Findings input -- not re-worded."
+          },
+          "canonical_finding_id": {
+            "type": "string",
+            "enum": ["F01", "F02", "F03", "F04", "F05", "F06", "F07", "F08", "F09", "F10", "F11"],
+            "description": "REQUIRED. Copy this value exactly from the matching finding in the Architectural Findings input -- do NOT re-derive, guess, or assign by list position. The 11 canonical findings are: F01 = Upgradeable Proxy Control Risk. F02 = Registry Centralisation Risk. F03 = ACL Manager Role Concentration. F04 = Pool Configurator Centralised Configuration Authority. F05 = Umbrella / Backstop Authority Concentration. F06 = Asset Price Oracle Dependency. F07 = Token Implementation Dependency Risk. F08 = Interest Rate Strategy Dependency Risk. F09 = Flashloan Composability Risk. F10 = Position Manager Trust Boundary. F11 = Reserve Registry Dependency Risk. Every one of these 11 IDs must appear exactly once across the review_assessments array."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low", "Informational"],
+            "description": "Severity of the finding, copied from the Architectural Findings input -- not re-assessed here."
+          },
+          "review_assessment": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "Overall evidence-based assessment across ALL sources (architecture, deterministic, historical, temporal, audit combined). Must be 'Contradicted' whenever the deterministic validation status for this finding is CONTRADICTED, PARTIALLY_CONTRADICTED, or MIXED_SUPPORT_AND_CONTRADICTION -- never softened to Partially Supported in those cases."
+          },
+          "review_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Confidence in this evidence-based assessment (0.0-1.0). Reflects evidence quality and agreement, not the finding's own severity or importance. This is your own independent, evidence-based judgment -- reported as a secondary, holistic comparison point alongside Node 17's fused output, not a substitute for it."
+          },
+          "audit_relationship": {
+            "type": "string",
+            "enum": ["Supported", "Partially Supported", "Outside Scope", "Contradicted"],
+            "description": "How the independent Sigma Prime audit specifically relates to this finding -- a separate axis from review_assessment. Usually 'Outside Scope' since the audit is implementation-only and most architectural findings are structural. It is normal for review_assessment = Supported and audit_relationship = Outside Scope to appear together."
+          },
+          "consensus_level": {
+            "type": "string",
+            "enum": ["Strong", "Moderate", "Limited"],
+            "description": "Overall agreement between the available evidence sources."
+          },
+          "evidence_sources_present": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "architectural",
+              "deterministic",
+              "historical",
+              "temporal",
+              "audit"
+            ],
+            "properties": {
+              "architectural": {
+                "type": "boolean",
+                "description": "Architectural evidence present"
+              },
+              "deterministic": {
+                "type": "boolean",
+                "description": "Deterministic validation present"
+              },
+              "historical": {
+                "type": "boolean",
+                "description": "Historical precedent present"
+              },
+              "temporal": {
+                "type": "boolean",
+                "description": "Temporal evidence present"
+              },
+              "audit": {
+                "type": "boolean",
+                "description": "Audit evidence present"
+              }
+            }
+          },
+          "deterministic_status": {
+            "type": "string",
+            "enum": ["FULLY_SUPPORTED", "PARTIALLY_SUPPORTED", "MIXED_SUPPORT_AND_CONTRADICTION", "PARTIALLY_CONTRADICTED", "CONTRADICTED", "UNRESOLVED"],
+            "description": "The exact finding-level status copied from Node 16's deterministic validation output for this canonical_finding_id. Required so downstream Node 18 can directly compare this value against Node 16's own record without re-parsing evidence_summary text."
+          },
+          "evidence_summary": {
+            "type": "string",
+            "description": "2-3 sentence summary of what evidence says about this finding"
+          },
+          "review_reasoning": {
+            "type": "string",
+            "description": "Your reasoning for this assessment"
+          },
+          "fusion_comparison_note": {
+            "type": "string",
+            "description": "Plain-language comparison of Node 07's raw confidence, Node 16's deterministic evidence, and Node 17's mathematically fused belief/plausibility/BetP for this finding. Explain agreement or divergence; do not recompute, adjust, or contradict Node 17's numbers. Explicitly name two situations when present: (1) Node 07's raw confidence falling outside Node 17's [belief_R, plausibility_R] range (divergence.interval_contains_baseline = false) -- say in which direction and why it matters; (2) real Node 16 contradiction (K > 0) that did not proportionally lower Node 17's fused belief -- a known property of Dempster combination where disagreement is absorbed into the conflict value K rather than reducing belief. Do not force either situation into a finding where it doesn't apply."
+          }
+        }
+      }
+    }
+  }
+}

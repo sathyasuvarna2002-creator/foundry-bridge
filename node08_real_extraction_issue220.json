@@ -1,0 +1,53 @@
+{
+  "architectural_risks": [
+    {
+      "risk_name": "Exchange Rate can be manipulated via direct token transfer (donation)",
+      "finding_id": "ASSET-CUSTODY-01",
+      "risk_category": "Asset Custody",
+      "claim_id": "VENUS-EXCHANGERATE-MINT-TOTALBORROWS-TRANSFER",
+      "validation_target": {
+        "protocol": "Venus",
+        "primary_component": "VToken.sol",
+        "mechanism_tokens": ["exchangeRate", "mint", "transfer", "totalBorrows"],
+        "dependency_chain": []
+      },
+      "severity": "Medium",
+      "description": "A malicious user can manipulate the protocol to receive greater rewards from the RewardsDistributor than they should, by manipulating the exchangeRate via a direct token transfer to the VToken contract alongside a legitimate mint.",
+      "architectural_rationale": "The attacker mints into the VToken contract legitimately, but also transfers an amount of tokens directly to the VToken contract. This inflates the exchangeRate for all subsequent users who mint.",
+      "affected_components": ["VToken.sol"],
+      "supporting_observations": [
+        "Allows the attacker to push their leverage past the market collateralFactor",
+        "Violates the internal accounting when borrowing and repaying, causing totalBorrows and the sum of individual account borrows to become out of sync",
+        "The attacker can use the leverage to repeatedly borrow and mint into the VToken to inflate their share of rewards issued by the rewards distributor"
+      ],
+      "evidence": [
+        "A malicious user can manipulate the protocol to receive greater rewards from the RewardsDistributor than they should. To achieve this the attacker manipulates the exchangeRate.",
+        "The attacker mints into the VToken contract legitimately, but also transfers an amount of tokens directly to the VToken contract. This inflates the exchangeRate for all subsequent users who mint.",
+        "Violates the internal accounting when borrowing and repaying causing the totalBorrows and the sum of the individual account borrows to become out of sync, i.e. the totalBorrows can become 0 while there are still some loans outstanding, leading to loss of earned interest."
+      ],
+      "governance_model": "Unknown",
+      "runtime_validation_candidate": true,
+      "runtime_validation_rationale": "The PoC gist referenced in the source (https://gist.github.com/lokithe5th/cda577cc1b50cb91cfe1d4b1eccecc7e) simulates this using the repo's own test suite, so it is directly reproducible via a fork test.",
+      "related_risks": [],
+      "mitigation_considerations": [
+        "Have a check that the expected amount of underlying equals the actual amount of underlying, and if not, sweep the additional underlying tokens into the next minter's calculations, reducing the economic incentive and eliminating the exaggerated effect on the exchange rate."
+      ],
+      "confidence": 0.9,
+      "confidence_rationale": "Primary-source Code4rena finding (GitHub issue body read directly), explicit lines-of-code citation and PoC gist link present. Confidence is not higher because the exact function names at the cited lines (VToken.sol#L1463/#L1421/#L756) were not independently confirmed against the referenced commit -- mechanism_tokens are drawn from the issue's own prose, not verified source code, so dependency_chain is left empty rather than guessed.",
+      "provenance": {
+        "source_type": "AUDIT_FINDING",
+        "source_firm": "Code4rena",
+        "source_document_title": "Venus Protocol Isolated Pools -- Exchange Rate can be manipulated (Issue #220)",
+        "source_url": "https://github.com/code-423n4/2023-05-venus-findings/issues/220",
+        "date_flagged": "2023-05-14",
+        "original_severity_label": "2 (Med Risk) / M-10",
+        "original_disposition": {
+          "category": "DISMISSED_AS_INTENDED",
+          "verbatim_quote": "Donations are an intentional feature with no negative side effects.",
+          "quote_location": "secondary reporting (dev.to writeup, Halborn post-mortem), NOT confirmed against the primary GitHub issue's own comment thread -- the fetched issue body did not include sponsor comments.",
+          "extraction_confidence": "SECONDARY_SOURCE_UNVERIFIED"
+        }
+      }
+    }
+  ]
+}
