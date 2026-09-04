@@ -10,3 +10,5 @@ AuditRepository_Updated*.zip
 # Editor/OS noise
 .DS_Store
 Thumbs.db
+
+n8n_workflows/Compound_workflow.json
